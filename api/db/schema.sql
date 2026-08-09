@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
+    image_url VARCHAR(500) NOT NULL,
     prep_time_minutes INT NOT NULL,
     cook_time_minutes INT NOT NULL,
     servings INT NOT NULL,

@@ -4,6 +4,7 @@ export interface Recipe {
     title: string;
     slug: string;
     description: string | null;
+    image_url: string;
     prep_time_minutes: number;
     cook_time_minutes: number;
     servings: number;
