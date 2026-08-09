@@ -1,15 +1,14 @@
-import express, { Application, Request, Response } from 'express'
+import express, { Request, Response } from 'express'
 import { query } from './config/db.js'
+import router from './routes'
 
 const app = express()
 
 app.use(express.json())
 
-app.get("/", (req, res) => {
-    res.json({ message: "abc" })
-})
+app.use("/api", router)
 
-app.get("/health", async (req, res) => {
+app.get("/health", async (req: Request, res: Response) => {
     try {
         const result = await query("SELECT NOW()")
         res.json({ status: "Success", dbTime: result.rows[0].now })
