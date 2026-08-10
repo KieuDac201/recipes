@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-headline",
@@ -19,8 +17,8 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "GourmetPop — Vibrant Recipes",
-  description: "Discover, cook, and share vibrant recipes. A youthful food app powered by GourmetPop.",
+  title: "GourmetPop — Công Thức Món Ăn Hấp Dẫn",
+  description: "Khám phá, nấu nướng và chia sẻ những công thức món ăn đặc sắc cùng GourmetPop.",
 };
 
 export default function RootLayout({
@@ -30,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${plusJakartaSans.variable} ${beVietnamPro.variable} h-full antialiased`}
     >
       <head>
@@ -41,9 +39,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#faf9f5] text-[#1b1c1a]">
-        <Navbar />
         {children}
-        <Footer />
       </body>
     </html>
   );

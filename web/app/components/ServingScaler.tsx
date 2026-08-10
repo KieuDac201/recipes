@@ -29,14 +29,15 @@ export default function ServingScaler({ ingredients, baseServings }: ServingScal
       {/* Header */}
       <div className="flex justify-between items-center mb-6 border-b border-[#efeeea] pb-4">
         <h2 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a]">
-          Ingredients
+          Nguyên Liệu
         </h2>
 
         {/* Scaler */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => changeServings(-1)}
-            aria-label="Decrease servings"
+            aria-label="Giảm khẩu phần"
+            title="Giảm khẩu phần"
             className="w-8 h-8 rounded-full bg-[#efeeea] text-[#1b1c1a] flex items-center justify-center hover:bg-[#ff6b6b] hover:text-white transition-all text-lg font-bold leading-none cursor-pointer"
           >
             −
@@ -46,12 +47,13 @@ export default function ServingScaler({ ingredients, baseServings }: ServingScal
           </span>
           <button
             onClick={() => changeServings(1)}
-            aria-label="Increase servings"
+            aria-label="Tăng khẩu phần"
+            title="Tăng khẩu phần"
             className="w-8 h-8 rounded-full bg-[#efeeea] text-[#1b1c1a] flex items-center justify-center hover:bg-[#ff6b6b] hover:text-white transition-all text-lg font-bold leading-none cursor-pointer"
           >
             +
           </button>
-          <span className="text-xs font-semibold text-[#584140] ml-1">servings</span>
+          <span className="text-xs font-semibold text-[#584140] ml-1">khẩu phần</span>
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export default function ServingScaler({ ingredients, baseServings }: ServingScal
         >
           add_shopping_cart
         </span>
-        Add to Grocery List
+        Thêm Vào Danh Sách Đi Chợ
       </button>
     </div>
   );

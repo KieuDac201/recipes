@@ -45,8 +45,8 @@ export default function RecipeListing() {
     <>
       {/* Hero + Search */}
       <section className="text-center mb-16 flex flex-col items-center">
-        <h1 className="font-[var(--font-headline)] text-5xl font-extrabold tracking-tight text-[#1b1c1a] mb-10 leading-tight">
-          What are we cooking today? 🍳
+        <h1 className="font-[var(--font-headline)] text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1a] mb-10 leading-tight">
+          Hôm nay chúng ta nấu gì nào? 🍳
         </h1>
 
         {/* Search bar */}
@@ -63,7 +63,7 @@ export default function RecipeListing() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Find a recipe..."
+            placeholder="Tìm kiếm công thức món ăn..."
             className="w-full bg-[#f8f9fa] border-0 rounded-full py-4 pl-12 pr-6 text-lg text-[#1b1c1a] placeholder:text-[#584140]/60 focus:ring-2 focus:ring-[#ff6b6b] focus:bg-white shadow-inner transition-all duration-300 outline-none"
           />
         </div>
@@ -80,7 +80,7 @@ export default function RecipeListing() {
                   : "bg-[#efeeea] text-[#1b1c1a] hover:bg-[#e3e2df]"
               }`}
             >
-              All
+              Tất Cả
             </button>
 
             {displayCategories.map((cat) => (
@@ -104,8 +104,8 @@ export default function RecipeListing() {
       {filtered.length === 0 ? (
         <div className="text-center py-24">
           <span className="text-6xl mb-4 block">🍽️</span>
-          <p className="text-xl font-semibold text-[#584140]">No recipes found.</p>
-          <p className="text-[#8c706f] mt-1">Try a different search term or category.</p>
+          <p className="text-xl font-semibold text-[#584140]">Không tìm thấy công thức nào.</p>
+          <p className="text-[#8c706f] mt-1">Hãy thử tìm kiếm bằng từ khóa hoặc danh mục khác.</p>
         </div>
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -153,7 +153,7 @@ export default function RecipeListing() {
                     >
                       schedule
                     </span>
-                    {totalTime} mins
+                    {totalTime} phút
                   </div>
                 </div>
               </Link>

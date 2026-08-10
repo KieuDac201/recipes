@@ -19,7 +19,7 @@ export const dynamicParams = false;
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const data = getRecipeWithDetails(slug);
-  if (!data) return { title: "Recipe Not Found" };
+  if (!data) return { title: "Không Tìm Thấy Công Thức" };
   return {
     title: `${data.recipe.title} — GourmetPop`,
     description: data.recipe.description,
@@ -53,7 +53,7 @@ export default async function RecipePage({ params }: PageProps) {
           className="inline-flex items-center gap-2 text-[#584140] hover:text-[#ae2f34] text-sm font-semibold mb-6 transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          Back to recipes
+          Quay lại danh sách món ăn
         </Link>
 
         {/* Title + meta */}
@@ -82,19 +82,19 @@ export default async function RecipePage({ params }: PageProps) {
             <div className="grid grid-cols-2 gap-y-2 sm:flex sm:flex-wrap sm:divide-x sm:divide-[#e0bfbd] text-sm font-semibold text-[#584140]">
               <div className="flex items-center gap-1.5 sm:pr-5">
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>timer</span>
-                Prep: {recipe.prep_time_minutes}m
+                Chuẩn bị: {recipe.prep_time_minutes}p
               </div>
               <div className="flex items-center gap-1.5 px-5">
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>skillet</span>
-                Cook: {recipe.cook_time_minutes}m
+                Nấu: {recipe.cook_time_minutes}p
               </div>
               <div className="flex items-center gap-1.5 sm:px-5 font-bold text-[#1b1c1a]">
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>schedule</span>
-                Total: {totalTime}m
+                Tổng cộng: {totalTime}p
               </div>
               <div className="flex items-center gap-1.5 sm:pl-5">
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>group</span>
-                {recipe.servings} servings
+                {recipe.servings} khẩu phần
               </div>
             </div>
           </div>
@@ -110,7 +110,6 @@ export default async function RecipePage({ params }: PageProps) {
             alt={recipe.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-
         </div>
       </section>
 
@@ -124,7 +123,7 @@ export default async function RecipePage({ params }: PageProps) {
         {/* Instructions (server rendered) */}
         <section className="lg:col-span-8 flex flex-col gap-10">
           <h2 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a]">
-            Step-by-Step Instructions
+            Hướng Dẫn Từng Bước
           </h2>
 
           <div className="space-y-10">
@@ -136,7 +135,7 @@ export default async function RecipePage({ params }: PageProps) {
                 </div>
 
                 <h3 className="font-[var(--font-headline)] text-lg font-bold text-[#1b1c1a] mb-2">
-                  Step {step.step_number}
+                  Bước {step.step_number}
                 </h3>
                 <p className="text-[#584140] leading-relaxed mb-4">
                   {step.instruction}
@@ -147,7 +146,7 @@ export default async function RecipePage({ params }: PageProps) {
                   <div className="rounded-2xl overflow-hidden shadow-sm aspect-video group-hover:shadow-[0_10px_30px_-10px_rgba(0,176,131,0.2)] transition-shadow">
                     <img
                       src={step.image_url}
-                      alt={`Step ${step.step_number}`}
+                      alt={`Bước ${step.step_number}`}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -159,10 +158,10 @@ export default async function RecipePage({ params }: PageProps) {
           {/* "Made this recipe?" CTA */}
           <div className="mt-10 p-10 bg-[#f4f4f0] rounded-3xl text-center shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-[#e9e8e4]">
             <h3 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a] mb-2">
-              Made this recipe?
+              Bạn đã nấu món này chưa?
             </h3>
             <p className="text-[#584140] mb-6">
-              We&apos;d love to know how it turned out! Snap a pic and share your thoughts.
+              Hãy chia sẻ thành quả và cảm nhận của bạn để truyền cảm hứng cho mọi người nhé!
             </p>
             <div className="flex justify-center gap-3">
               <button className="bg-[#ff6b6b] text-white text-sm font-semibold px-8 py-3 rounded-full shadow-[0_4px_10px_-2px_rgba(255,107,107,0.4)] hover:-translate-y-1 hover:shadow-[0_6px_15px_-2px_rgba(255,107,107,0.5)] transition-all flex items-center gap-2 cursor-pointer">
@@ -172,7 +171,7 @@ export default async function RecipePage({ params }: PageProps) {
                 >
                   star
                 </span>
-                Leave a Review
+                Viết Đánh Giá
               </button>
             </div>
           </div>

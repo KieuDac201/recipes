@@ -7,11 +7,11 @@ export default function Footer() {
             GourmetPop
           </span>
           <p className="text-sm text-[#584140]">
-            © 2024 GourmetPop. Freshly made for foodies.
+            © 2024 GourmetPop. Nơi lan tỏa niềm đam mê ẩm thực.
           </p>
         </div>
         <nav className="flex flex-wrap gap-6 text-xs font-bold text-[#584140]">
-          {["Instagram", "TikTok", "Pinterest", "Newsletter", "Privacy"].map((link) => (
+          {["Instagram", "TikTok", "Pinterest", "Bản Tin", "Chính Sách Bảo Mật"].map((link) => (
             <a
               key={link}
               href="#"
