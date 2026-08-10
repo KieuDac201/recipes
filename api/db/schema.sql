@@ -36,3 +36,8 @@ CREATE TABLE IF NOT EXISTS recipes_categories (
     category_id INT REFERENCES categories(id) ON DELETE CASCADE,
     PRIMARY KEY (recipe_id, category_id) 
 );
+
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE INDEX IF NOT EXISTS idx_recipes_unaccent_title 
+ON recipes (unaccent(LOWER(title)) varchar_pattern_ops);

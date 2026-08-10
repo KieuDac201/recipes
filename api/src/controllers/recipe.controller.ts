@@ -5,9 +5,9 @@ import { GetRecipesQuery } from "../schemas/recipe.schema";
 
 const getRecipes = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { limit, current_page: currentPage } = req.query as unknown as GetRecipesQuery;
+        const { limit, current_page: currentPage, search } = req.query as unknown as GetRecipesQuery;
 
-        const { recipes, totalPage } = await getAllRecipes(limit, currentPage)
+        const { recipes, totalPage } = await getAllRecipes(limit, currentPage, search)
 
         return sendSuccess(res, recipes, 200, {
             currentPage,

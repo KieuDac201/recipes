@@ -1,8 +1,8 @@
 import * as RecipeRepository from "../repositories/recipe.repository";
 import { Recipe } from "../types/recipe.type";
 
-export const getAllRecipes = async (limit: number, currentPage: number): Promise<{ recipes: Recipe[], totalPage: number }> => {
+export const getAllRecipes = async (limit: number, currentPage: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
     const offset = (currentPage - 1) * limit;
 
-    return await RecipeRepository.findAllRecipes(limit, offset)
+    return await RecipeRepository.findAllRecipes(limit, offset, search)
 }
