@@ -5,12 +5,12 @@ import Link from "next/link";
 import { categories, getRecipesWithCategories } from "@/src/data/mockData";
 
 const categoryBadgeColors: Record<string, { bg: string; text: string }> = {
-  vegan:       { bg: "bg-[#00b083]", text: "text-white" },
-  "quick-easy":{ bg: "bg-[#ff6b6b]", text: "text-white" },
-  breakfast:   { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  desserts:    { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  healthy:     { bg: "bg-[#00b083]", text: "text-white" },
-  seafood:     { bg: "bg-[#ff6b6b]", text: "text-white" },
+  soup:       { bg: "bg-[#ff6b6b]", text: "text-white" },
+  breakfast:  { bg: "bg-[#ffd167]", text: "text-[#765900]" },
+  vegan:      { bg: "bg-[#00b083]", text: "text-white" },
+  "quick-easy": { bg: "bg-[#ff6b6b]", text: "text-white" },
+  desserts:   { bg: "bg-[#ffd167]", text: "text-[#765900]" },
+  specialty:  { bg: "bg-[#ae2f34]", text: "text-white" },
   all:         { bg: "bg-[#efeeea]", text: "text-[#1b1c1a]" },
 };
 

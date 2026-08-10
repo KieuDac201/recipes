@@ -27,12 +27,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const categoryBadgeColors: Record<string, { bg: string; text: string }> = {
-  vegan: { bg: "bg-[#00b083]", text: "text-white" },
+  soup:       { bg: "bg-[#ff6b6b]", text: "text-white" },
+  breakfast:  { bg: "bg-[#ffd167]", text: "text-[#765900]" },
+  vegan:      { bg: "bg-[#00b083]", text: "text-white" },
   "quick-easy": { bg: "bg-[#ff6b6b]", text: "text-white" },
-  breakfast: { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  desserts: { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  healthy: { bg: "bg-[#00b083]", text: "text-white" },
-  seafood: { bg: "bg-[#ff6b6b]", text: "text-white" },
+  desserts:   { bg: "bg-[#ffd167]", text: "text-[#765900]" },
+  specialty:  { bg: "bg-[#ae2f34]", text: "text-white" },
 };
 
 export default async function RecipePage({ params }: PageProps) {

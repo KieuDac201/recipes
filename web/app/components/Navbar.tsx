@@ -10,7 +10,7 @@ export default function Navbar() {
             href="/"
             className="text-2xl font-black tracking-tight text-[#ae2f34] font-[var(--font-headline)]"
           >
-            GourmetPop
+            Phuong's Recipes
           </Link>
           <div className="hidden md:flex items-center gap-5 ml-4">
             <Link
