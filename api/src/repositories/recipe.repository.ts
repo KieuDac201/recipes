@@ -21,11 +21,17 @@ const findAllRecipes = async (limit: number, offset: number, search?: string): P
 }
 
 const findRecipeById = async (id: string): Promise<Recipe | null> => {
+    /*sql*/
     const dataSQL = `
         SELECT 
             r.*,
             COALESCE(
-                json_agg(DISTINCT c.name),
+                (
+                    SELECT json_agg(c.name)
+                    FROM recipes_categories rc
+                    JOIN categories c ON c.id = rc.category_id
+                    WHERE rc.recipe_id = r.id
+                ),
                 '[]'::json
             ) AS categories,
             COALESCE(
@@ -58,10 +64,7 @@ const findRecipeById = async (id: string): Promise<Recipe | null> => {
                 '[]'::json
             ) AS ingredients
         FROM recipes r
-        LEFT JOIN recipes_categories rc ON rc.recipe_id = r.id
-        LEFT JOIN categories c ON c.id = rc.category_id
         WHERE r.id = $1
-        GROUP BY r.id
     `;
     const result = await query(dataSQL, [id]);
     return result.rows[0] || null;
