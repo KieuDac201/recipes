@@ -1,47 +1,35 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getRecipeWithDetails, recipes } from "@/src/data/mockData";
+import { getRecipeByIdOrSlug } from "@/src/services/recipeApi";
 import ServingScaler from "@/app/components/ServingScaler";
 import RecipeActions from "@/app/components/RecipeActions";
+import CategoryBadge from "@/app/components/CategoryBadge";
+import RecipeMetaStats from "@/app/components/RecipeMetaStats";
 import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  return recipes.map((r) => ({ slug: r.slug }));
-}
-
-// No dynamic fallback — only pre-built slugs are served; anything else → 404
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const data = getRecipeWithDetails(slug);
-  if (!data) return { title: "Không Tìm Thấy Công Thức" };
+  const recipe = await getRecipeByIdOrSlug(slug);
+  if (!recipe) return { title: "Không Tìm Thấy Công Thức" };
   return {
-    title: `${data.recipe.title} — GourmetPop`,
-    description: data.recipe.description,
+    title: `${recipe.title} — GourmetPop`,
+    description: recipe.description || undefined,
   };
 }
 
-const categoryBadgeColors: Record<string, { bg: string; text: string }> = {
-  soup:       { bg: "bg-[#ff6b6b]", text: "text-white" },
-  breakfast:  { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  vegan:      { bg: "bg-[#00b083]", text: "text-white" },
-  "quick-easy": { bg: "bg-[#ff6b6b]", text: "text-white" },
-  desserts:   { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  specialty:  { bg: "bg-[#ae2f34]", text: "text-white" },
-};
-
 export default async function RecipePage({ params }: PageProps) {
   const { slug } = await params;
-  const data = getRecipeWithDetails(slug);
-  if (!data) notFound();
+  const recipe = await getRecipeByIdOrSlug(slug);
+  if (!recipe) notFound();
 
-  const { recipe, ingredients, instructions, categories } = data;
-  const totalTime = recipe.prep_time_minutes + recipe.cook_time_minutes;
+  const { ingredients = [], instructions = [], categories = [] } = recipe;
 
   return (
     <main className="flex-grow w-full max-w-[1200px] mx-auto px-4 md:px-12 py-16">
@@ -64,39 +52,21 @@ export default async function RecipePage({ params }: PageProps) {
             </h1>
 
             {/* Category badges */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {categories.map((cat) => {
-                const colors = categoryBadgeColors[cat.slug] ?? { bg: "bg-[#efeeea]", text: "text-[#1b1c1a]" };
-                return (
-                  <span
-                    key={cat.id}
-                    className={`${colors.bg} ${colors.text} text-xs font-bold px-3 py-1 rounded-full`}
-                  >
-                    {cat.name}
-                  </span>
-                );
-              })}
-            </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-5">
+                {categories.map((cat, idx) => {
+                  const catName = typeof cat === "string" ? cat : (cat as any).name;
+                  return <CategoryBadge key={idx} category={catName} />;
+                })}
+              </div>
+            )}
 
             {/* Time/serving stats */}
-            <div className="grid grid-cols-2 gap-y-2 sm:flex sm:flex-wrap sm:divide-x sm:divide-[#e0bfbd] text-sm font-semibold text-[#584140]">
-              <div className="flex items-center gap-1.5 sm:pr-5">
-                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>timer</span>
-                Chuẩn bị: {recipe.prep_time_minutes}p
-              </div>
-              <div className="flex items-center gap-1.5 px-5">
-                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>skillet</span>
-                Nấu: {recipe.cook_time_minutes}p
-              </div>
-              <div className="flex items-center gap-1.5 sm:px-5 font-bold text-[#1b1c1a]">
-                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>schedule</span>
-                Tổng cộng: {totalTime}p
-              </div>
-              <div className="flex items-center gap-1.5 sm:pl-5">
-                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>group</span>
-                {recipe.servings} khẩu phần
-              </div>
-            </div>
+            <RecipeMetaStats
+              prepTimeMinutes={recipe.prep_time_minutes}
+              cookTimeMinutes={recipe.cook_time_minutes}
+              servings={recipe.servings}
+            />
           </div>
 
           {/* Action buttons — client component */}

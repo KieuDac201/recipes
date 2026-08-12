@@ -1,45 +1,81 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
-import { categories, getRecipesWithCategories } from "@/src/data/mockData";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getRecipes } from "@/src/services/recipeApi";
+import type { Recipe, PaginationMeta } from "@/src/types/recipe";
+import RecipeCard from "./RecipeCard";
+import RecipeSkeletonCard from "./RecipeSkeletonCard";
 
-const categoryBadgeColors: Record<string, { bg: string; text: string }> = {
-  soup:       { bg: "bg-[#ff6b6b]", text: "text-white" },
-  breakfast:  { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  vegan:      { bg: "bg-[#00b083]", text: "text-white" },
-  "quick-easy": { bg: "bg-[#ff6b6b]", text: "text-white" },
-  desserts:   { bg: "bg-[#ffd167]", text: "text-[#765900]" },
-  specialty:  { bg: "bg-[#ae2f34]", text: "text-white" },
-  all:         { bg: "bg-[#efeeea]", text: "text-[#1b1c1a]" },
-};
-
-function getBadgeColors(slug: string) {
-  return categoryBadgeColors[slug] ?? { bg: "bg-[#efeeea]", text: "text-[#1b1c1a]" };
-}
+const PAGE_SIZE = 8;
 
 export default function RecipeListing() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const allRecipes = useMemo(() => getRecipesWithCategories(), []);
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filtered = useMemo(() => {
-    return allRecipes.filter((recipe) => {
-      const matchesSearch =
-        search.trim() === "" ||
-        recipe.title.toLowerCase().includes(search.toLowerCase()) ||
-        recipe.description.toLowerCase().includes(search.toLowerCase());
+  // Initial fetch and fetch when search changes
+  const isFirstRender = useRef(true);
 
-      const matchesCategory =
-        activeCategory === "all" ||
-        recipe.categories.some((c) => c.slug === activeCategory);
+  const fetchInitialRecipes = useCallback(async (searchTerm: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await getRecipes({
+        search: searchTerm || undefined,
+        current_page: 1,
+        limit: PAGE_SIZE,
+      });
+      setRecipes(res.data || []);
+      setPagination(res.pagination || null);
+    } catch (err: any) {
+      console.error("Failed to load recipes:", err);
+      setError("Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-      return matchesSearch && matchesCategory;
-    });
-  }, [allRecipes, search, activeCategory]);
+  useEffect(() => {
+    fetchInitialRecipes(debouncedSearch);
+  }, [debouncedSearch, fetchInitialRecipes]);
 
-  const displayCategories = categories.filter((c) => c.slug !== "all");
+  // Load more handler
+  const handleLoadMore = async () => {
+    if (!pagination || isLoadingMore) return;
+    const nextPage = (pagination.currentPage || 1) + 1;
+    if (nextPage > (pagination.totalPage || 1)) return;
+
+    setIsLoadingMore(true);
+    try {
+      const res = await getRecipes({
+        search: debouncedSearch || undefined,
+        current_page: nextPage,
+        limit: PAGE_SIZE,
+      });
+      setRecipes((prev) => [...prev, ...(res.data || [])]);
+      setPagination(res.pagination || null);
+    } catch (err: any) {
+      console.error("Failed to load more recipes:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const hasMore = pagination
+    ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
+    : false;
 
   return (
     <>
@@ -50,7 +86,7 @@ export default function RecipeListing() {
         </h1>
 
         {/* Search bar */}
-        <div className="relative w-full max-w-2xl mb-10 group">
+        <div className="relative w-full max-w-2xl mb-6 group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <span
               className="material-symbols-outlined text-[#584140] group-focus-within:text-[#ff6b6b] transition-colors"
@@ -64,102 +100,110 @@ export default function RecipeListing() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm công thức món ăn..."
-            className="w-full bg-[#f8f9fa] border-0 rounded-full py-4 pl-12 pr-6 text-lg text-[#1b1c1a] placeholder:text-[#584140]/60 focus:ring-2 focus:ring-[#ff6b6b] focus:bg-white shadow-inner transition-all duration-300 outline-none"
+            className="w-full bg-[#f8f9fa] border-0 rounded-full py-4 pl-12 pr-12 text-lg text-[#1b1c1a] placeholder:text-[#584140]/60 focus:ring-2 focus:ring-[#ff6b6b] focus:bg-white shadow-inner transition-all duration-300 outline-none"
           />
-        </div>
-
-        {/* Category pills */}
-        <div className="w-full overflow-x-auto scrollbar-hide py-3">
-          <div className="flex gap-3 justify-start md:justify-center min-w-max px-4">
-            {/* "All" pill */}
+          {search && (
             <button
-              onClick={() => setActiveCategory("all")}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                activeCategory === "all"
-                  ? "bg-[#ff6b6b] text-white shadow-[0_2px_0_0_#ae2f34] -translate-y-0.5"
-                  : "bg-[#efeeea] text-[#1b1c1a] hover:bg-[#e3e2df]"
-              }`}
+              onClick={() => setSearch("")}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#584140] hover:text-[#ff6b6b] cursor-pointer"
+              title="Xóa tìm kiếm"
             >
-              Tất Cả
+              <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
-
-            {displayCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.slug)}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                  activeCategory === cat.slug
-                    ? "bg-[#ff6b6b] text-white shadow-[0_2px_0_0_#ae2f34] -translate-y-0.5"
-                    : "bg-[#efeeea] text-[#1b1c1a] hover:bg-[#e3e2df]"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Recipe Grid */}
-      {filtered.length === 0 ? (
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center max-w-lg mx-auto mb-10">
+          <p className="font-semibold mb-3">{error}</p>
+          <button
+            onClick={() => fetchInitialRecipes(debouncedSearch)}
+            className="bg-[#ff6b6b] text-white px-6 py-2 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
+          >
+            Thử Lại
+          </button>
+        </div>
+      )}
+
+      {/* Loading Skeleton on Initial Load */}
+      {isLoading && (
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+            <RecipeSkeletonCard key={i} />
+          ))}
+        </section>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && recipes.length === 0 && (
         <div className="text-center py-24">
           <span className="text-6xl mb-4 block">🍽️</span>
-          <p className="text-xl font-semibold text-[#584140]">Không tìm thấy công thức nào.</p>
-          <p className="text-[#8c706f] mt-1">Hãy thử tìm kiếm bằng từ khóa hoặc danh mục khác.</p>
+          <p className="text-xl font-semibold text-[#1b1c1a]">Không tìm thấy công thức nào.</p>
+          <p className="text-[#584140] mt-1">Hãy thử tìm kiếm bằng từ khóa khác.</p>
+          {debouncedSearch && (
+            <button
+              onClick={() => setSearch("")}
+              className="mt-5 bg-[#ff6b6b] text-white px-6 py-2.5 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
+            >
+              Xóa Bộ Lọc
+            </button>
+          )}
         </div>
-      ) : (
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((recipe) => {
-            const totalTime = recipe.prep_time_minutes + recipe.cook_time_minutes;
-            const primaryCategory = recipe.categories[0];
-            const badgeColors = primaryCategory
-              ? getBadgeColors(primaryCategory.slug)
-              : { bg: "bg-[#efeeea]", text: "text-[#1b1c1a]" };
+      )}
 
-            return (
-              <Link
-                key={recipe.id}
-                href={`/recipes/${recipe.slug}`}
-                className="group bg-white rounded-3xl overflow-hidden flex flex-col p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_-10px_rgba(255,107,107,0.15)] shadow-[0_10px_30px_-10px_rgba(255,107,107,0.08)]"
+      {/* Recipe Grid */}
+      {!isLoading && !error && recipes.length > 0 && (
+        <>
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {recipes.map((recipe) => (
+              <RecipeCard key={recipe.id} recipe={recipe} />
+            ))}
+          </section>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="flex justify-center mt-12 mb-6">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="bg-[#ff6b6b] text-white font-[var(--font-headline)] text-base font-bold px-8 py-3.5 rounded-full shadow-[0_4px_14px_rgba(255,107,107,0.35)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,107,107,0.45)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 cursor-pointer"
               >
-                {/* Image */}
-                <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-3">
-                  <img
-                    src={recipe.image_url}
-                    alt={recipe.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {primaryCategory && (
-                    <span
-                      className={`absolute top-3 left-3 ${badgeColors.bg} ${badgeColors.text} text-xs font-bold px-3 py-1 rounded-full shadow-md backdrop-blur-sm`}
+                {isLoadingMore ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
                     >
-                      {primaryCategory.name}
-                    </span>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-col flex-grow">
-                  <h3 className="font-[var(--font-headline)] text-xl font-bold text-[#1b1c1a] mb-1 group-hover:text-[#ff6b6b] transition-colors line-clamp-2 leading-snug">
-                    {recipe.title}
-                  </h3>
-                  <p className="text-sm text-[#584140] line-clamp-2 mb-3 flex-grow leading-relaxed">
-                    {recipe.description}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs font-bold text-[#584140] mt-auto pt-3 border-t border-[#e3e2df]/60">
-                    <span
-                      className="material-symbols-outlined text-[15px]"
-                      style={{ fontVariationSettings: "'FILL' 0" }}
-                    >
-                      schedule
-                    </span>
-                    {totalTime} phút
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </section>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Đang tải thêm...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                    Xem Thêm Công Thức
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   );

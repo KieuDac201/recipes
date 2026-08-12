@@ -1,5 +1,5 @@
-import { query } from "../config/db.js"
-import { Recipe } from "../types/recipe.type.js"
+import { query } from "../config/db"
+import { Recipe } from "../types/recipe.type"
 
 const findAllRecipes = async (limit: number, offset: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
     const searchValue = search || ""
@@ -9,11 +9,14 @@ const findAllRecipes = async (limit: number, offset: number, search?: string): P
         ORDER BY id
         LIMIT $1 OFFSET $2
     `;
-    const totalCountSQL = `SELECT COUNT(*) as total FROM recipes`;
+    const totalCountSQL = `
+        SELECT COUNT(*) as total FROM recipes
+        WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER($1))
+    `;
 
     const [result, totalCount] = await Promise.all([
         query(dataSQL, [limit, offset, `%${searchValue}%`]),
-        query(totalCountSQL),
+        query(totalCountSQL, [`%${searchValue}%`]),
     ]);
     const totalPage = Math.ceil(totalCount.rows[0].total / limit);
 
@@ -21,6 +24,7 @@ const findAllRecipes = async (limit: number, offset: number, search?: string): P
 }
 
 const findRecipeById = async (id: string): Promise<Recipe | null> => {
+    const isNumeric = /^\d+$/.test(id);
     /*sql*/
     const dataSQL = `
         SELECT 
@@ -64,7 +68,7 @@ const findRecipeById = async (id: string): Promise<Recipe | null> => {
                 '[]'::json
             ) AS ingredients
         FROM recipes r
-        WHERE r.id = $1
+        WHERE ${isNumeric ? "r.id = $1" : "r.slug = $1"}
     `;
     const result = await query(dataSQL, [id]);
     return result.rows[0] || null;

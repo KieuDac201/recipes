@@ -19,8 +19,8 @@ The workspace is a monorepo containing:
 
 > [!IMPORTANT]
 > **ESM Import Convention (NodeNext)**:
-> In TypeScript files under `/api/src`, all relative imports **MUST** include the `.js` file extension.
-> Example: `import { query } from "./config/db.js";` (NOT `./config/db`).
+> In TypeScript files under `/api/src`, all relative imports **MUST** remove `.js` file extension.
+> Example: `import { query } from "./config/db"` (NOT `./config/db.js`).
 
 ---
 

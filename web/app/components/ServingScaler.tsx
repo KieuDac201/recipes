@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Ingredient } from "@/src/data/mockData";
+import type { Ingredient } from "@/src/types/recipe";
 
 interface ServingScalerProps {
   ingredients: Ingredient[];
@@ -13,8 +13,10 @@ export default function ServingScaler({ ingredients, baseServings }: ServingScal
 
   const scale = servings / baseServings;
 
-  function formatQty(amount: number): string {
-    const scaled = amount * scale;
+  function formatQty(amount: number | string): string {
+    const numericAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (isNaN(numericAmount)) return String(amount);
+    const scaled = numericAmount * scale;
     if (scaled % 1 === 0) return String(scaled);
     // Show up to 1 decimal place
     return scaled.toFixed(1).replace(/\.0$/, "");
@@ -83,7 +85,7 @@ function IngredientItem({
   formatQty,
 }: {
   ingredient: Ingredient;
-  formatQty: (amount: number) => string;
+  formatQty: (amount: number | string) => string;
 }) {
   const [checked, setChecked] = useState(false);
   const id = `ing-${ingredient.id}`;
