@@ -17,7 +17,6 @@ export const PaginationMetaSchema = registry.register(
         currentPage: z.number().int().optional().openapi({ example: 1 }),
         totalPage: z.number().int().optional().openapi({ example: 5 }),
         limit: z.number().int().optional().openapi({ example: 10 }),
-        totalCount: z.number().int().optional().openapi({ example: 48 }),
     })
 );
 

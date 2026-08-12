@@ -1,4 +1,4 @@
-import { getAllRecipes, getRecipeById } from "../services/recipe.service"
+import { getAllRecipes, getRecipeById, postRecipe } from "../services/recipe.service"
 import { NextFunction, Request, Response } from "express"
 import { sendSuccess } from "../utils/response"
 import { GetRecipesQuery } from "../schemas/recipe.schema";
@@ -30,7 +30,17 @@ const getRecipe = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
+const createRecipe = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const recipe = await postRecipe(req.body);
+        return sendSuccess(res, recipe, 201)
+    } catch (error) {
+        next(error)
+    }
+}
+
 export {
     getRecipes,
-    getRecipe
+    getRecipe,
+    createRecipe
 }

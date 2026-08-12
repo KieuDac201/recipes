@@ -53,3 +53,30 @@ export interface GetRecipesParams {
   current_page?: number;
   search?: string;
 }
+
+export interface IngredientBody {
+  name: string;
+  unit: string;
+  amount: number | string;
+}
+
+export interface InstructionBody {
+  step_number: number;
+  instruction: string;
+  image_url: string | null;
+}
+
+export interface RecipeBody {
+  title: string;
+  slug: string;
+  description: string | null;
+  prep_time_minutes: number;
+  cook_time_minutes: number;
+  servings: number;
+  image_url: string;
+  categories: number[];
+  instructions: InstructionBody[];
+  ingredients: IngredientBody[];
+}
+
+export type CreateRecipeBody = RecipeBody;

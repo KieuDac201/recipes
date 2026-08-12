@@ -45,6 +45,7 @@ export const InstructionSchema = registry.register(
         instruction: z.string().openapi({
             example: "Bring a large pot of salted water to a boil and cook pasta until al dente.",
         }),
+        image_url: z.string().nullable().openapi({ example: "https://images.example.com/spaghetti.jpg" }),
     })
 );
 
@@ -77,7 +78,53 @@ export const GetRecipeDetailResponseSchema = registry.register(
     })
 );
 
+export const CreateRecipeResponseSchema = registry.register(
+    "CreateRecipeResponse",
+    z.object({
+        success: z.boolean().openapi({ example: true }),
+        data: RecipeSchema,
+    })
+);
+
 // Request Schemas
+export const createIngredientPayloadSchema = z.object({
+    name: z.string().min(1, "Ingredient name is required").openapi({ example: "Xương ống / Xương bò" }),
+    unit: z.string().min(1, "Unit is required").openapi({ example: "kg" }),
+    amount: z.union([z.string(), z.number()]).openapi({ example: 2 }),
+});
+
+export const createInstructionPayloadSchema = z.object({
+    step_number: z.number().int().positive("Step number must be positive").openapi({ example: 1 }),
+    instruction: z.string().min(1, "Instruction text is required").openapi({
+        example: "Chần xương bò trong nước sôi khoảng 10 phút, sau đó vớt ra rửa sạch lại bằng nước lạnh để loại bỏ bọt bẩn.",
+    }),
+    image_url: z.string().nullable().optional().openapi({ example: null }),
+});
+
+export const createRecipePayloadSchema = registry.register(
+    "CreateRecipePayload",
+    z.object({
+        title: z.string().min(1, "Title is required").openapi({ example: "Phở Bò Truyền Thống" }),
+        slug: z.string().min(1, "Slug is required").openapi({ example: "pho-bo-truyen-thong" }),
+        description: z.string().nullable().optional().openapi({
+            example: "Món phở bò truyền thống Việt Nam với nước dùng đậm đà thơm mùi hoa hồi, thảo quả, gừng nướng, ăn kèm bánh phở tươi và thịt bò mềm ngọt.",
+        }),
+        prep_time_minutes: z.number().int().nonnegative("Prep time must be non-negative").openapi({ example: 30 }),
+        cook_time_minutes: z.number().int().nonnegative("Cook time must be non-negative").openapi({ example: 180 }),
+        servings: z.number().int().positive("Servings must be positive").openapi({ example: 6 }),
+        image_url: z.string().min(1, "Image URL is required").openapi({
+            example: "https://toomva.com/images/posts/2024/11/10-tu-vung-ve-thuc-pham-thay-cho-food.jpg",
+        }),
+        categories: z.array(z.number().int().positive()).min(1, "At least one category is required").openapi({
+            example: [1, 2],
+        }),
+        instructions: z.array(createInstructionPayloadSchema).min(1, "At least one instruction step is required"),
+        ingredients: z.array(createIngredientPayloadSchema).min(1, "At least one ingredient is required"),
+    })
+);
+
+export type CreateRecipePayload = z.infer<typeof createRecipePayloadSchema>;
+
 export const getRecipesQuerySchema = z.object({
     limit: z.coerce
         .number()
@@ -171,6 +218,41 @@ registry.registerPath({
         },
         404: {
             description: "Recipe not found",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+registry.registerPath({
+    method: "post",
+    path: "/recipes",
+    tags: ["Recipes"],
+    summary: "Create a new recipe",
+    description: "Creates a new recipe with categories, ingredients, and instructions.",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: createRecipePayloadSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        201: {
+            description: "Recipe created successfully",
+            content: {
+                "application/json": {
+                    schema: CreateRecipeResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: "Invalid request payload",
             content: {
                 "application/json": {
                     schema: ErrorResponseSchema,

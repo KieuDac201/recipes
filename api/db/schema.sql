@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS instructions (
     id SERIAL PRIMARY KEY,
     recipe_id INT REFERENCES recipes(id) ON DELETE CASCADE,
     step_number INT NOT NULL,
-    instruction TEXT NOT NULL
+    instruction TEXT NOT NULL,
+    image_url VARCHAR(500) DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories (
