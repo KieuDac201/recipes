@@ -91,7 +91,7 @@ const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
         RETURNING *
     `;
         const { title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings } = recipe;
-        const result = await query(recipeSql, [title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings]);
+        const result = await client.query(recipeSql, [title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings]);
         const recipeId = result.rows[0].id;
 
         if (recipe.ingredients && recipe.ingredients.length > 0) {
@@ -138,9 +138,22 @@ const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
 }
 
+// Kiểm tra xem publicId/URL ảnh có đang được lưu trong recipes hoặc instructions không
+const isImageUsedInRecipe
+    = async (publicId: string): Promise<boolean> => {
+        const sql = `
+        SELECT 1 FROM recipes WHERE image_url LIKE $1
+        UNION
+        SELECT 1 FROM instructions WHERE image_url LIKE $1
+        LIMIT 1;
+    `;
+        const res = await query(sql, [`%${publicId}%`]);
+        return (res.rowCount ?? 0) > 0;
+    };
 
 export {
     findAllRecipes,
     findRecipeById,
-    createRecipe
+    createRecipe,
+    isImageUsedInRecipe
 }
