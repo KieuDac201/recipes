@@ -84,6 +84,16 @@ export interface CreateRecipeResponse {
   data: Recipe;
 }
 
+export interface UpdateRecipeResponse {
+  success: boolean;
+  data: Recipe;
+}
+
+export interface DeleteRecipeResponse {
+  success: boolean;
+  data: Recipe;
+}
+
 export interface UploadImageData {
   url: string;
   publicId: string;

@@ -9,6 +9,9 @@ interface Step3Props {
   publishError: string | null;
   onBack: () => void;
   onPublish: () => void;
+  isEditMode?: boolean;
+  submitButtonLabel?: string;
+  loadingLabel?: string;
 }
 
 export function Step3PreviewPublish({
@@ -17,6 +20,9 @@ export function Step3PreviewPublish({
   publishError,
   onBack,
   onPublish,
+  isEditMode = false,
+  submitButtonLabel,
+  loadingLabel,
 }: Step3Props) {
   // Category names mapped from IDs
   const selectedCategories = AVAILABLE_CATEGORIES.filter((c) =>
@@ -225,7 +231,7 @@ export function Step3PreviewPublish({
               <span className="material-symbols-outlined animate-spin text-[20px]">
                 progress_activity
               </span>
-              Đang Xuất Bản Lên Hệ Thống...
+              {loadingLabel || (isEditMode ? "Đang Cập Nhật Công Thức..." : "Đang Xuất Bản Lên Hệ Thống...")}
             </>
           ) : (
             <>
@@ -235,7 +241,7 @@ export function Step3PreviewPublish({
               >
                 check_circle
               </span>
-              Xuất Bản Công Thức
+              {submitButtonLabel || (isEditMode ? "Cập Nhật Công Thức" : "Xuất Bản Công Thức")}
             </>
           )}
         </button>

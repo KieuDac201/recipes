@@ -3,13 +3,13 @@ import { Recipe, RecipeBody, RecipeDetail } from "../types/recipe.type";
 import { AppError } from "../utils/AppError";
 import { confirmImages, extractPublicIdFromUrl } from "./upload.service";
 
-export const getAllRecipes = async (limit: number, currentPage: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
+const getAllRecipes = async (limit: number, currentPage: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
     const offset = (currentPage - 1) * limit;
 
     return await RecipeRepository.findAllRecipes(limit, offset, search)
 }
 
-export const getRecipeById = async (id: string): Promise<RecipeDetail> => {
+const getRecipeById = async (id: string): Promise<RecipeDetail> => {
     const recipe = await RecipeRepository.findRecipeById(id)
 
     if (!recipe) {
@@ -18,9 +18,7 @@ export const getRecipeById = async (id: string): Promise<RecipeDetail> => {
     return recipe
 }
 
-export const postRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
-    const createdRecipe = await RecipeRepository.createRecipe(recipe);
-
+const removeTempTagImages = async (recipe: RecipeBody) => {
     const publicIdsToConfirm: string[] = [];
     if (recipe.image_url) {
         const mainImageId = extractPublicIdFromUrl(recipe.image_url);
@@ -38,5 +36,39 @@ export const postRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
     if (publicIdsToConfirm.length > 0) {
         await confirmImages(publicIdsToConfirm);
     }
+}
+
+const postRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
+    const createdRecipe = await RecipeRepository.createRecipe(recipe);
+
+    await removeTempTagImages(recipe)
+
     return createdRecipe;
 }
+
+const updateRecipe = async (id: string, recipe: RecipeBody): Promise<Omit<Recipe, "created_at">> => {
+    const updatedRecipe = await RecipeRepository.updateRecipe(id, recipe);
+
+    await removeTempTagImages(recipe)
+
+    return updatedRecipe;
+}
+
+const removeRecipe = async (id: string): Promise<Recipe> => {
+    const deletedRecipe = await RecipeRepository.deleteRecipe(id);
+
+    if (!deletedRecipe) {
+        throw new AppError("Not Found", 404)
+    }
+    return deletedRecipe;
+}
+
+const RecipeService = {
+    getAllRecipes,
+    getRecipeById,
+    postRecipe,
+    updateRecipe,
+    removeRecipe
+}
+
+export default RecipeService

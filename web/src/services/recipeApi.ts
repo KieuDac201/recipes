@@ -51,12 +51,35 @@ export const recipeService = {
     const response = await apiClient.post<CreateRecipeResponse>("/recipes", payload);
     return response.data;
   },
+
+  /**
+   * Update an existing recipe by ID
+   */
+  update: async (id: string | number, payload: RecipeBody): Promise<Recipe> => {
+    const response = await apiClient.put<CreateRecipeResponse>(
+      `/recipes/${encodeURIComponent(id)}`,
+      payload
+    );
+    return response.data;
+  },
+
+  /**
+   * Delete a recipe by ID
+   */
+  delete: async (id: string | number): Promise<Recipe> => {
+    const response = await apiClient.delete<CreateRecipeResponse>(
+      `/recipes/${encodeURIComponent(id)}`
+    );
+    return response.data;
+  },
 };
 
 // Standalone function exports for convenient direct imports
 export const getRecipes = recipeService.getAll;
 export const getRecipeByIdOrSlug = recipeService.getByIdOrSlug;
 export const createRecipe = recipeService.create;
+export const updateRecipe = recipeService.update;
+export const deleteRecipe = recipeService.delete;
 
 export default recipeService;
 

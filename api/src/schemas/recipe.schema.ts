@@ -86,6 +86,22 @@ export const CreateRecipeResponseSchema = registry.register(
     })
 );
 
+export const UpdateRecipeResponseSchema = registry.register(
+    "UpdateRecipeResponse",
+    z.object({
+        success: z.boolean().openapi({ example: true }),
+        data: RecipeSchema,
+    })
+);
+
+export const DeleteRecipeResponseSchema = registry.register(
+    "DeleteRecipeResponse",
+    z.object({
+        success: z.boolean().openapi({ example: true }),
+        data: RecipeSchema,
+    })
+);
+
 // Request Schemas
 export const createIngredientPayloadSchema = z.object({
     name: z.string().min(1, "Ingredient name is required").openapi({ example: "Xương ống / Xương bò" }),
@@ -124,6 +140,9 @@ export const createRecipePayloadSchema = registry.register(
 );
 
 export type CreateRecipePayload = z.infer<typeof createRecipePayloadSchema>;
+
+export const updateRecipePayloadSchema = createRecipePayloadSchema;
+export type UpdateRecipePayload = CreateRecipePayload;
 
 export const getRecipesQuerySchema = z.object({
     limit: z.coerce
@@ -253,6 +272,81 @@ registry.registerPath({
         },
         400: {
             description: "Invalid request payload",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+registry.registerPath({
+    method: "put",
+    path: "/recipes/{id}",
+    tags: ["Recipes"],
+    summary: "Update an existing recipe by ID",
+    description:
+        "Updates an existing recipe including its title, slug, description, image, prep/cook times, servings, categories, ingredients, and instructions.",
+    request: {
+        params: recipeIdParamSchema,
+        body: {
+            content: {
+                "application/json": {
+                    schema: createRecipePayloadSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Recipe updated successfully",
+            content: {
+                "application/json": {
+                    schema: UpdateRecipeResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: "Invalid request payload or parameters",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        404: {
+            description: "Recipe not found",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+registry.registerPath({
+    method: "delete",
+    path: "/recipes/{id}",
+    tags: ["Recipes"],
+    summary: "Delete a recipe by ID",
+    description:
+        "Deletes a recipe and its associated ingredients, instructions, and category relationships by ID.",
+    request: {
+        params: recipeIdParamSchema,
+    },
+    responses: {
+        200: {
+            description: "Recipe deleted successfully",
+            content: {
+                "application/json": {
+                    schema: DeleteRecipeResponseSchema,
+                },
+            },
+        },
+        404: {
+            description: "Recipe not found",
             content: {
                 "application/json": {
                     schema: ErrorResponseSchema,

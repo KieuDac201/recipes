@@ -37,7 +37,7 @@ interface Step2Props {
   onBack: () => void;
   onNext: () => void;
   onPreview: () => void;
-  onSaveDraft: () => void;
+  onSaveDraft?: () => void;
 }
 
 export function Step2IngredientsInstructions({

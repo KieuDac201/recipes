@@ -77,6 +77,17 @@ const findRecipeById = async (id: string): Promise<RecipeDetail | null> => {
     return result.rows[0] || null;
 }
 
+const insertIngredientsSql = `INSERT INTO ingredients (recipe_id, name, amount, unit)
+                 SELECT $1, x.name, x.amount, x.unit
+                 FROM jsonb_to_recordset($2::jsonb) AS x(name text, amount numeric, unit text)`
+
+const insertInstructionsSql = `INSERT INTO instructions (recipe_id, step_number, instruction, image_url)
+                 SELECT $1, x.step_number, x.instruction, x.image_url
+                 FROM jsonb_to_recordset($2::jsonb) AS x(step_number int, instruction text, image_url text)`
+
+const linkRecipeWithCateSql = `INSERT INTO recipes_categories (recipe_id, category_id)
+                 SELECT $1, id FROM categories WHERE id = ANY($2::int[])`
+
 const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
     const client = await pool.connect();
@@ -96,26 +107,21 @@ const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
         if (recipe.ingredients && recipe.ingredients.length > 0) {
             await client.query(
-                `INSERT INTO ingredients (recipe_id, name, amount, unit)
-                 SELECT $1, x.name, x.amount, x.unit
-                 FROM jsonb_to_recordset($2::jsonb) AS x(name text, amount numeric, unit text)`,
+                insertIngredientsSql,
                 [recipeId, JSON.stringify(recipe.ingredients)]
             );
         }
 
         if (recipe.categories?.length > 0) {
             await client.query(
-                `INSERT INTO recipes_categories (recipe_id, category_id)
-                 SELECT $1, id FROM categories WHERE id = ANY($2::int[])`,
+                linkRecipeWithCateSql,
                 [recipeId, recipe.categories]
             );
         }
 
         if (recipe.instructions?.length > 0) {
             await client.query(
-                `INSERT INTO instructions (recipe_id, step_number, instruction, image_url)
-                 SELECT $1, x.step_number, x.instruction, x.image_url
-                 FROM jsonb_to_recordset($2::jsonb) AS x(step_number int, instruction text, image_url text)`,
+                insertInstructionsSql,
                 [recipeId, JSON.stringify(recipe.instructions)]
             );
         }
@@ -138,6 +144,80 @@ const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
 }
 
+const updateRecipe = async (id: string, recipe: RecipeBody): Promise<Omit<Recipe, "created_at">> => {
+    const client = await pool.connect()
+
+    try {
+        await client.query('BEGIN');
+        /*sql*/
+        const recipeSql = `
+            UPDATE recipes
+            SET title = COALESCE($1, title),
+                slug = COALESCE($2, slug),
+                description = COALESCE($3, description),
+                image_url = COALESCE($4, image_url),
+                prep_time_minutes = COALESCE($5, prep_time_minutes),
+                cook_time_minutes = COALESCE($6, cook_time_minutes),
+                servings = COALESCE($7, servings)
+            WHERE id = $8
+            RETURNING *
+        `
+        const { title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings } = recipe
+        await client.query(recipeSql, [title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings, id])
+
+        if (recipe.ingredients?.length > 0) {
+            await client.query(`DELETE FROM ingredients WHERE recipe_id = $1`, [id])
+
+            await client.query(
+                insertIngredientsSql,
+                [id, JSON.stringify(recipe.ingredients)]
+            );
+
+        }
+
+        if (recipe.instructions?.length > 0) {
+            await client.query(`DELETE FROM instructions WHERE recipe_id = $1`, [id])
+
+            await client.query(
+                insertInstructionsSql,
+                [id, JSON.stringify(recipe.instructions)]
+            );
+        }
+
+        if (recipe.categories?.length > 0) {
+            await client.query(`DELETE FROM recipes_categories WHERE recipe_id = $1`, [id])
+
+            await client.query(
+                linkRecipeWithCateSql,
+                [id, recipe.categories]
+            );
+        }
+
+        const recipeCreated = {
+            id: Number(id),
+            ...recipe,
+        }
+
+        await client.query("COMMIT")
+        return recipeCreated
+    } catch (error) {
+        await client.query("ROLLBACK")
+        throw error
+    } finally {
+        client.release()
+    }
+}
+
+const deleteRecipe = async (id: string): Promise<Recipe> => {
+    /*sql*/
+    const deleteSql = `
+        DELETE FROM recipes WHERE id = $1 RETURNING *
+    `
+    const result = await query(deleteSql, [id])
+
+    return result.rows[0];
+}
+
 // Kiểm tra xem publicId/URL ảnh có đang được lưu trong recipes hoặc instructions không
 const isImageUsedInRecipe
     = async (publicId: string): Promise<boolean> => {
@@ -155,5 +235,7 @@ export {
     findAllRecipes,
     findRecipeById,
     createRecipe,
-    isImageUsedInRecipe
+    isImageUsedInRecipe,
+    deleteRecipe,
+    updateRecipe
 }
