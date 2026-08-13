@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { uploadImageToCloudinary } from "../services/upload.service";
+import { cleanOrphanedImages, uploadImageToCloudinary } from "../services/upload.service";
 import { sendSuccess } from "../utils/response";
 import { AppError } from "../utils/AppError";
 
@@ -16,3 +16,14 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
         next(error);
     }
 };
+
+export const cleanUpImages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await cleanOrphanedImages();
+        return sendSuccess(res, {
+            message: "Cleanup completed"
+        }, 200);
+    } catch (error) {
+        next(error);
+    }
+}
