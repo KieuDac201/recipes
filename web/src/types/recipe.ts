@@ -79,4 +79,53 @@ export interface RecipeBody {
   ingredients: IngredientBody[];
 }
 
-export type CreateRecipeBody = RecipeBody;
+export interface CreateRecipeResponse {
+  success: boolean;
+  data: Recipe;
+}
+
+export interface UploadImageData {
+  url: string;
+  publicId: string;
+}
+
+export interface UploadImageResponse {
+  success: boolean;
+  data: UploadImageData;
+}
+
+export interface CategoryOption {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface FormIngredientItem {
+  id: string;
+  name: string;
+  amount: string;
+  unit: string;
+}
+
+export interface FormInstructionStep {
+  id: string;
+  stepNumber: number;
+  title?: string;
+  instruction: string;
+  imageUrl: string | null;
+}
+
+export interface CreateRecipeFormData {
+  title: string;
+  slug: string;
+  description: string;
+  categories: number[];
+  prepTimeMinutes: number | string;
+  cookTimeMinutes: number | string;
+  servings: number | string;
+  imageUrl: string;
+  ingredients: FormIngredientItem[];
+  instructions: FormInstructionStep[];
+}
+
+

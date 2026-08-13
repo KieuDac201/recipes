@@ -4,6 +4,9 @@ import {
   GetRecipesResponse,
   GetRecipeDetailResponse,
   RecipeDetail,
+  Recipe,
+  RecipeBody,
+  CreateRecipeResponse,
 } from "@/src/types/recipe";
 
 /**
@@ -40,10 +43,20 @@ export const recipeService = {
       return null;
     }
   },
+
+  /**
+   * Create a new recipe with categories, ingredients, and instructions
+   */
+  create: async (payload: RecipeBody): Promise<Recipe> => {
+    const response = await apiClient.post<CreateRecipeResponse>("/recipes", payload);
+    return response.data;
+  },
 };
 
 // Standalone function exports for convenient direct imports
 export const getRecipes = recipeService.getAll;
 export const getRecipeByIdOrSlug = recipeService.getByIdOrSlug;
+export const createRecipe = recipeService.create;
 
 export default recipeService;
+
