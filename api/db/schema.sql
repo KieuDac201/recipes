@@ -7,8 +7,14 @@ CREATE TABLE IF NOT EXISTS recipes (
     prep_time_minutes INT NOT NULL,
     cook_time_minutes INT NOT NULL,
     servings INT NOT NULL,
+    author_id INT REFERENCES users(id) ON DELETE SET NULL,
+    status recipe_status DEFAULT 'pending',
+    rejection_reason TEXT DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_recipes_status
+ON recipes(status) WHERE status = 'approved';
 
 CREATE TABLE IF NOT EXISTS ingredients (
     id SERIAL PRIMARY KEY,
@@ -37,6 +43,19 @@ CREATE TABLE IF NOT EXISTS recipes_categories (
     category_id INT REFERENCES categories(id) ON DELETE CASCADE,
     PRIMARY KEY (recipe_id, category_id) 
 );
+
+CREATE TYPE user_role AS ENUM ('user', 'admin')
+
+CREATE TYPE recipe_status AS ENUM ('pending','approved','rejected')
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role user_role DEFAULT 'user'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+)
 
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
