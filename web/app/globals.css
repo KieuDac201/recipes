@@ -174,17 +174,6 @@
   --radius-xl:   var(--radius-xl);
   --radius-full: var(--radius-full);
 
-  /* Spacing extras */
-  --spacing-xs:             var(--spacing-xs);
-  --spacing-sm:             var(--spacing-sm);
-  --spacing-base:           var(--spacing-base);
-  --spacing-md:             var(--spacing-md);
-  --spacing-lg:             var(--spacing-lg);
-  --spacing-xl:             var(--spacing-xl);
-  --spacing-gutter:         var(--spacing-gutter);
-  --spacing-margin-mobile:  var(--spacing-margin-mobile);
-  --spacing-margin-desktop: var(--spacing-margin-desktop);
-
   /* Shadows */
   --shadow-surface:     var(--shadow-surface);
   --shadow-interactive: var(--shadow-interactive);

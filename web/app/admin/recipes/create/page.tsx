@@ -13,6 +13,11 @@ import {
   Recipe,
   RecipeBody,
 } from "@/src/types/recipe";
+import {
+  recipeStep1Schema,
+  recipeStep2Schema,
+  formatZodFieldErrors,
+} from "@/src/schemas";
 
 const DRAFT_STORAGE_KEY = "gourmet_recipe_create_draft_v1";
 
@@ -116,79 +121,27 @@ export default function CreateRecipePage() {
   };
 
   // ── Validation ───────────────────────────────────────────────
+  // ── Validation using Zod Schemas ───────────────────────────
   const validateStep1 = (): boolean => {
-    const errs: Record<string, string> = {};
-
-    if (!formData.title.trim()) {
-      errs.title = "Vui lòng nhập tên công thức.";
+    const result = recipeStep1Schema.safeParse(formData);
+    if (!result.success) {
+      const errs = formatZodFieldErrors(result.error);
+      setErrors(errs);
+      return false;
     }
-
-    if (!formData.slug.trim()) {
-      errs.slug = "Đường dẫn tĩnh (slug) không được để trống.";
-    } else if (!/^[a-z0-9-]+$/.test(formData.slug)) {
-      errs.slug = "Slug chỉ được chứa chữ cái thường, số và dấu gạch nối (-).";
-    }
-
-    if (formData.categories.length === 0) {
-      errs.categories = "Vui lòng chọn ít nhất 1 danh mục cho món ăn.";
-    }
-
-    if (formData.prepTimeMinutes === "" || formData.prepTimeMinutes === undefined) {
-      errs.prepTimeMinutes = "Vui lòng nhập thời gian chuẩn bị.";
-    } else {
-      const prep = Number(formData.prepTimeMinutes);
-      if (isNaN(prep) || prep < 0) {
-        errs.prepTimeMinutes = "Thời gian chuẩn bị phải là số không âm.";
-      }
-    }
-
-    if (formData.cookTimeMinutes === "" || formData.cookTimeMinutes === undefined) {
-      errs.cookTimeMinutes = "Vui lòng nhập thời gian nấu.";
-    } else {
-      const cook = Number(formData.cookTimeMinutes);
-      if (isNaN(cook) || cook < 0) {
-        errs.cookTimeMinutes = "Thời gian nấu phải là số không âm.";
-      }
-    }
-
-    if (formData.servings === "" || formData.servings === undefined) {
-      errs.servings = "Vui lòng nhập khẩu phần.";
-    } else {
-      const serv = Number(formData.servings);
-      if (isNaN(serv) || serv <= 0) {
-        errs.servings = "Khẩu phần phải lớn hơn 0.";
-      }
-    }
-
-    if (!formData.imageUrl || !formData.imageUrl.trim()) {
-      errs.imageUrl = "Vui lòng tải lên ảnh đại diện cho món ăn.";
-    }
-
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    setErrors({});
+    return true;
   };
 
   const validateStep2 = (): boolean => {
-    const errs: Record<string, string> = {};
-
-    // Validate ingredients
-    const validIngredients = formData.ingredients.filter(
-      (ing) => ing.name.trim() !== ""
-    );
-    if (validIngredients.length === 0) {
-      errs.ingredients = "Vui lòng thêm ít nhất 1 nguyên liệu có tên rõ ràng.";
+    const result = recipeStep2Schema.safeParse(formData);
+    if (!result.success) {
+      const errs = formatZodFieldErrors(result.error);
+      setErrors(errs);
+      return false;
     }
-
-    // Validate instructions
-    const validInstructions = formData.instructions.filter(
-      (step) => step.instruction.trim() !== ""
-    );
-    if (validInstructions.length === 0) {
-      errs.instructions = "Vui lòng mô tả ít nhất 1 bước thực hiện.";
-    }
-
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    setErrors({});
+    return true;
   };
 
   const validateAll = (): boolean => {
