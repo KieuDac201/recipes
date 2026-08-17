@@ -1,33 +1,10 @@
-export interface Recipe {
-  id: number;
-  title: string;
-  slug: string;
-  description: string | null;
-  image_url: string;
-  prep_time_minutes: number;
-  cook_time_minutes: number;
-  servings: number;
+export interface BaseEntity<TId = number> {
+  id: TId;
+}
+
+export interface TimestampedEntity {
   created_at: string | Date;
-}
-
-export interface Ingredient {
-  id: number;
-  name: string;
-  amount: number | string;
-  unit: string;
-}
-
-export interface Instruction {
-  id: number;
-  step_number: number;
-  instruction: string;
-  image_url?: string | null;
-}
-
-export interface RecipeDetail extends Recipe {
-  categories: string[];
-  ingredients: Ingredient[];
-  instructions: Instruction[];
+  updated_at?: string | Date;
 }
 
 export interface PaginationMeta {
@@ -37,88 +14,101 @@ export interface PaginationMeta {
   totalCount?: number;
 }
 
-export interface GetRecipesResponse {
-  success: boolean;
-  pagination?: PaginationMeta;
-  data: Recipe[];
-}
-
-export interface GetRecipeDetailResponse {
-  success: boolean;
-  data: RecipeDetail;
-}
-
-export interface GetRecipesParams {
+export interface PaginationParams {
   limit?: number;
+  page?: number;
   current_page?: number;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
-export interface IngredientBody {
+export interface ApiResponse<TData = unknown> {
+  success: boolean;
+  data: TData;
+  message?: string;
+}
+
+export interface PaginatedApiResponse<TData = unknown> extends ApiResponse<TData[]> {
+  pagination?: PaginationMeta;
+}
+
+export interface Category extends BaseEntity {
   name: string;
-  unit: string;
-  amount: number | string;
+  slug: string;
 }
 
-export interface InstructionBody {
+export interface Ingredient extends BaseEntity {
+  name: string;
+  amount: number | string;
+  unit: string;
+  recipe_id?: number;
+}
+
+export interface Instruction extends BaseEntity {
   step_number: number;
   instruction: string;
-  image_url: string | null;
+  image_url?: string | null;
+  recipe_id?: number;
 }
 
-export interface RecipeBody {
+export interface Recipe extends BaseEntity, TimestampedEntity {
   title: string;
   slug: string;
   description: string | null;
+  image_url: string;
   prep_time_minutes: number;
   cook_time_minutes: number;
   servings: number;
-  image_url: string;
+}
+
+export interface RecipeDetail extends Recipe {
+  categories: string[];
+  ingredients: Ingredient[];
+  instructions: Instruction[];
+}
+
+export type IngredientBody = Omit<Ingredient, "id" | "recipe_id">;
+export type IngredientInput = IngredientBody;
+
+export type InstructionBody = Omit<Instruction, "id" | "recipe_id">;
+export type InstructionInput = InstructionBody;
+
+export interface RecipeBody extends Omit<Recipe, "id" | "created_at" | "updated_at"> {
   categories: number[];
-  instructions: InstructionBody[];
   ingredients: IngredientBody[];
+  instructions: InstructionBody[];
+}
+export type RecipeInput = RecipeBody;
+export type UpdateRecipeBody = Partial<RecipeBody>;
+
+export interface GetRecipesParams extends PaginationParams {
+  category_id?: number;
+  category_slug?: string;
 }
 
-export interface CreateRecipeResponse {
-  success: boolean;
-  data: Recipe;
-}
-
-export interface UpdateRecipeResponse {
-  success: boolean;
-  data: Recipe;
-}
-
-export interface DeleteRecipeResponse {
-  success: boolean;
-  data: Recipe;
-}
+export type GetRecipesResponse = PaginatedApiResponse<Recipe>;
+export type GetRecipeDetailResponse = ApiResponse<RecipeDetail>;
+export type CreateRecipeResponse = ApiResponse<Recipe>;
+export type UpdateRecipeResponse = ApiResponse<Recipe>;
+export type DeleteRecipeResponse = ApiResponse<Recipe>;
 
 export interface UploadImageData {
   url: string;
   publicId: string;
 }
 
-export interface UploadImageResponse {
-  success: boolean;
-  data: UploadImageData;
-}
+export type UploadImageResponse = ApiResponse<UploadImageData>;
 
-export interface CategoryOption {
-  id: number;
-  name: string;
-  slug: string;
-}
+export type CategoryOption = Category;
 
-export interface FormIngredientItem {
-  id: string;
+export interface FormIngredientItem extends BaseEntity<string> {
   name: string;
   amount: string;
   unit: string;
 }
 
-export interface FormInstructionStep {
-  id: string;
+export interface FormInstructionStep extends BaseEntity<string> {
   stepNumber: number;
   title?: string;
   instruction: string;
@@ -138,4 +128,4 @@ export interface CreateRecipeFormData {
   instructions: FormInstructionStep[];
 }
 
-
+export type UpdateRecipeFormData = Partial<CreateRecipeFormData>;
