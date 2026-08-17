@@ -3,8 +3,17 @@ import swaggerUi from "swagger-ui-express";
 import router from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { getOpenApiDocumentation } from "./docs/openapi";
+import rateLimit from "express-rate-limit";
 
 const app = express();
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 phút
+    max: 100, // Tối đa 100 requests/IP
+    message: "Too many requests from this IP, please try again after 15 minutes",
+});
+
+app.use(apiLimiter)
 
 app.use(express.json());
 

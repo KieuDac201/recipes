@@ -2,6 +2,7 @@ import { z } from "zod";
 import { registry, ErrorResponseSchema } from "../docs/openapi";
 
 // Schema for user registration and login request payload
+
 export const CreateUserSchema = registry.register(
     "CreateUser",
     z.object({
@@ -142,6 +143,180 @@ registry.registerPath({
         },
         401: {
             description: "Authentication failed (incorrect email or password)",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        500: {
+            description: "Internal server error",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// Schema for forgot password request payload
+export const ForgotPasswordSchema = registry.register(
+    "ForgotPassword",
+    z.object({
+        email: z.string().email("Invalid email format").openapi({
+            example: "user@example.com",
+            description: "User email address to send OTP",
+        }),
+    })
+);
+
+export type ForgotPasswordSchemaType = z.infer<typeof ForgotPasswordSchema>;
+export const forgotPasswordSchema = ForgotPasswordSchema;
+
+// Response Schema for Forgot Password
+export const ForgotPasswordResponseSchema = registry.register(
+    "ForgotPasswordResponse",
+    z.object({
+        message: z.string().openapi({ example: "OTP sent successfully" }),
+    })
+);
+
+// Schema for reset password request payload
+export const ResetPasswordSchema = registry.register(
+    "ResetPassword",
+    z.object({
+        email: z.string().email("Invalid email format").openapi({
+            example: "user@example.com",
+            description: "User email address",
+        }),
+        otp: z.string().length(6, "OTP must be 6 digits").openapi({
+            example: "123456",
+            description: "6-digit OTP received via email",
+        }),
+        password: z.string().min(6, "Password must be at least 6 characters long").openapi({
+            example: "newSecurePassword123",
+            description: "New password (minimum 6 characters)",
+        }),
+    })
+);
+
+export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>;
+export const resetPasswordSchema = ResetPasswordSchema;
+
+// Response Schema for Reset Password
+export const ResetPasswordResponseSchema = registry.register(
+    "ResetPasswordResponse",
+    z.object({
+        message: z.string().openapi({ example: "Password reset successfully" }),
+    })
+);
+
+// Register OpenAPI Path: POST /users/forgot-password (Forgot Password)
+registry.registerPath({
+    method: "post",
+    path: "/users/forgot-password",
+    tags: ["Users & Authentication"],
+    summary: "Request password reset OTP",
+    description:
+        "Generates a 6-digit OTP code and sends it to the user's registered email address for password recovery.",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: ForgotPasswordSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "OTP sent successfully",
+            content: {
+                "application/json": {
+                    schema: ForgotPasswordResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: "Validation error (invalid email format)",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        404: {
+            description: "Email not found",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        429: {
+            description: "Too many reset requests. Rate limited.",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        500: {
+            description: "Internal server error",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// Register OpenAPI Path: POST /users/reset-password (Reset Password)
+registry.registerPath({
+    method: "post",
+    path: "/users/reset-password",
+    tags: ["Users & Authentication"],
+    summary: "Reset password using OTP",
+    description:
+        "Verifies the OTP code sent to the email and updates the user's password.",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: ResetPasswordSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Password reset successfully",
+            content: {
+                "application/json": {
+                    schema: ResetPasswordResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: "Validation error, invalid OTP, or expired reset code",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        404: {
+            description: "Email not found",
+            content: {
+                "application/json": {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        429: {
+            description: "Maximum reset attempts exceeded. Account locked temporarily.",
             content: {
                 "application/json": {
                     schema: ErrorResponseSchema,

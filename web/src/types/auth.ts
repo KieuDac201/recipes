@@ -15,6 +15,20 @@ export interface RegisterPayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otp: string;
+  password: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 export interface AuthResponse {
   message?: string;
   user?: {

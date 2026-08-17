@@ -1,6 +1,20 @@
 import { apiClient, ApiError } from "./apiClient";
-import { LoginPayload, RegisterPayload, UserProfile } from "@/src/types/auth";
-export type { LoginPayload, RegisterPayload, UserProfile };
+import {
+  LoginPayload,
+  RegisterPayload,
+  UserProfile,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+  MessageResponse,
+} from "@/src/types/auth";
+export type {
+  LoginPayload,
+  RegisterPayload,
+  UserProfile,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+  MessageResponse,
+};
 
 export const AUTH_TOKEN_KEY = "auth_token";
 export const AUTH_USER_KEY = "auth_user";
@@ -58,6 +72,36 @@ export const authService = {
   },
 
   /**
+   * Request OTP for password reset
+   */
+  forgotPassword: async (payload: ForgotPasswordPayload): Promise<MessageResponse> => {
+    try {
+      const response = await apiClient.post<MessageResponse>("/users/forgot-password", payload);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Không thể gửi mã OTP. Vui lòng kiểm tra lại email.");
+    }
+  },
+
+  /**
+   * Reset password with OTP
+   */
+  resetPassword: async (payload: ResetPasswordPayload): Promise<MessageResponse> => {
+    try {
+      const response = await apiClient.post<MessageResponse>("/users/reset-password", payload);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Đặt lại mật khẩu thất bại. Vui lòng kiểm tra lại mã OTP.");
+    }
+  },
+
+  /**
    * Log out current user
    */
   logout: (): void => {
@@ -91,6 +135,8 @@ export const authService = {
 
 export const login = authService.login;
 export const register = authService.register;
+export const forgotPassword = authService.forgotPassword;
+export const resetPassword = authService.resetPassword;
 export const logout = authService.logout;
 export const getCurrentUser = authService.getCurrentUser;
 export const isAuthenticated = authService.isAuthenticated;

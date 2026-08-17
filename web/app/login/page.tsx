@@ -18,6 +18,7 @@ function LoginFormContent() {
 
   useEffect(() => {
     const isRegistered = searchParams.get("registered");
+    const isReset = searchParams.get("reset");
     const prefilledEmail = searchParams.get("email");
 
     if (prefilledEmail) {
@@ -26,6 +27,8 @@ function LoginFormContent() {
 
     if (isRegistered === "true") {
       setSuccessMessage("Đăng ký tài khoản thành công! Vui lòng nhập mật khẩu để đăng nhập.");
+    } else if (isReset === "true") {
+      setSuccessMessage("Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.");
     }
   }, [searchParams]);
 
@@ -129,16 +132,12 @@ function LoginFormContent() {
             >
               Password
             </label>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                alert("Chức năng đặt lại mật khẩu đang được phát triển!");
-              }}
+            <Link
+              href={email ? `/forgot-password?email=${encodeURIComponent(email)}` : "/forgot-password"}
               className="text-xs font-bold text-[#ae2f34] hover:text-[#ff6b6b] transition-colors font-[var(--font-headline)]"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
           <div className="relative group">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#8c706f] group-focus-within:text-[#ae2f34] transition-colors pointer-events-none">
