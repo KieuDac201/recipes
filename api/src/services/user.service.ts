@@ -5,6 +5,7 @@ import { AppError } from "../utils/AppError";
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import sendMail from "./email.service";
+import { generateOtpEmailHtml } from "../templates/otpEmail.template";
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -66,8 +67,9 @@ const forgotPassword = async (email?: string) => {
     // hash otp
     const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex')
     // send mail
-    await sendMail(email, 'Reset Password', `Your reset OTP is: ${rawOtp}`);
-    // save to database (otp, expired = 1p, reset_otp_attempts = 0 )
+    const emailHtml = generateOtpEmailHtml(rawOtp);
+    await sendMail(email, 'Mã Xác Thực Đặt Lại Mật Khẩu — Bếp Phương', emailHtml);
+    // save to database (otp, expired = 10p, reset_otp_attempts = 0 )
     await userRepository.saveOtp(email, hashedOtp, new Date(Date.now() + 10 * 60 * 1000))
 
 }
