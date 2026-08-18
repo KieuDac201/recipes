@@ -1,12 +1,22 @@
 import * as RecipeRepository from "../repositories/recipe.repository";
-import { Recipe, RecipeBody, RecipeDetail } from "../types/recipe.type";
+import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type";
 import { AppError } from "../utils/AppError";
 import { confirmImages, extractPublicIdFromUrl } from "./upload.service";
 
-const getAllRecipes = async (limit: number, currentPage: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
+const getMyRecipes = async (limit: number, currentPage: number, search?: string, status?: RecipeStatus, authorId?: number): Promise<{ recipes: Recipe[], totalPage: number }> => {
     const offset = (currentPage - 1) * limit;
 
-    return await RecipeRepository.findAllRecipes(limit, offset, search)
+    return await RecipeRepository.findAllRecipes(limit, offset, search, status || 'all', authorId)
+}
+
+const getAdminRecipes = async (limit: number, currentPage: number, search?: string, status?: RecipeStatus, authorId?: number): Promise<{ recipes: Recipe[], totalPage: number }> => {
+    const offset = (currentPage - 1) * limit;
+    return await RecipeRepository.findAllRecipes(limit, offset, search, status, authorId)
+}
+
+const getPublicRecipes = async (limit: number, currentPage: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
+    const offset = (currentPage - 1) * limit;
+    return await RecipeRepository.findAllRecipes(limit, offset, search, "approved",)
 }
 
 const getRecipeById = async (id: string): Promise<RecipeDetail> => {
@@ -63,12 +73,19 @@ const removeRecipe = async (id: string): Promise<Recipe> => {
     return deletedRecipe;
 }
 
+const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_reason?: string) => {
+    await RecipeRepository.updateRecipeStatus(id, status, rejection_reason)
+}
+
 const RecipeService = {
-    getAllRecipes,
+    getMyRecipes,
+    getPublicRecipes,
+    getAdminRecipes,
     getRecipeById,
     postRecipe,
     updateRecipe,
-    removeRecipe
+    removeRecipe,
+    updateRecipeStatus
 }
 
 export default RecipeService

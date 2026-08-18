@@ -11,6 +11,17 @@ extendZodWithOpenApi(z);
 export const registry = new OpenAPIRegistry();
 
 // Reusable Common Schemas
+export const bearerAuth = registry.registerComponent(
+    "securitySchemes",
+    "BearerAuth",
+    {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Enter your JWT token in the format: Bearer <token>",
+    }
+);
+
 export const PaginationMetaSchema = registry.register(
     "PaginationMeta",
     z.object({

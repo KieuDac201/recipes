@@ -42,6 +42,8 @@ interface RecipeBody extends Omit<Recipe, "id" | "created_at"> {
     ingredients: IngredientBody[];
 }
 
+type RecipeStatus = 'pending' | 'approved' | 'rejected' | 'all'
+
 
 export {
     Recipe,
@@ -51,5 +53,5 @@ export {
     IngredientBody,
     InstructionBody,
     RecipeBody,
-
+    RecipeStatus
 };

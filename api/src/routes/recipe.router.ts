@@ -1,14 +1,24 @@
 import { Router } from "express";
 import RecipeController from "../controllers/recipe.controller";
 import { validateQuery, validateBody } from "../middlewares/validate";
-import { createRecipePayloadSchema, updateRecipePayloadSchema, getRecipesQuerySchema } from "../schemas/recipe.schema";
+import {
+    createRecipePayloadSchema,
+    updateRecipePayloadSchema,
+    getPublicRecipesQuerySchema,
+    getMyRecipesQuerySchema,
+    getAdminRecipesQuerySchema,
+    updateRecipeStatusSchema
+} from "../schemas/recipe.schema";
 import { verifyToken, authAdmin } from "../middlewares/auth";
 
 const router = Router();
-router.get('/', validateQuery(getRecipesQuerySchema), RecipeController.getRecipes);
+router.get('/', validateQuery(getPublicRecipesQuerySchema), RecipeController.getPublicRecipes);
+router.get('/my-recipes', verifyToken, validateQuery(getMyRecipesQuerySchema), RecipeController.getMyRecipes);
+router.get('/admin', verifyToken, authAdmin, validateQuery(getAdminRecipesQuerySchema), RecipeController.getAdminRecipes);
 router.get('/:id', RecipeController.getRecipe);
 router.post('/', verifyToken, validateBody(createRecipePayloadSchema), RecipeController.createRecipe);
 router.put("/:id", verifyToken, authAdmin, validateBody(updateRecipePayloadSchema), RecipeController.updateRecipe);
 router.delete('/:id', verifyToken, authAdmin, RecipeController.deleteRecipe);
+router.patch('/:id/status', verifyToken, authAdmin, validateBody(updateRecipeStatusSchema), RecipeController.updateRecipeStatus)
 
 export default router;

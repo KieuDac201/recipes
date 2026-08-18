@@ -4,6 +4,7 @@ interface UserPayload {
 }
 
 interface User {
+    id: number;
     email: string;
     role: string;
     password_hash: string

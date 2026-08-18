@@ -14,14 +14,49 @@ import {
  */
 export const recipeService = {
   /**
-   * Fetch paginated list of recipes with optional search keyword
+   * Fetch paginated list of public approved recipes (Home page)
    */
-  getAll: async (params?: GetRecipesParams): Promise<GetRecipesResponse> => {
+  getPublic: async (params?: GetRecipesParams): Promise<GetRecipesResponse> => {
     return apiClient.get<GetRecipesResponse>("/recipes", {
       params: {
         limit: params?.limit,
         current_page: params?.current_page,
         search: params?.search?.trim() || undefined,
+      },
+    });
+  },
+
+  /**
+   * Alias for getPublic
+   */
+  getAll: async (params?: GetRecipesParams): Promise<GetRecipesResponse> => {
+    return recipeService.getPublic(params);
+  },
+
+  /**
+   * Fetch current authenticated user's recipes with optional status filter
+   */
+  getMyRecipes: async (params?: GetRecipesParams): Promise<GetRecipesResponse> => {
+    return apiClient.get<GetRecipesResponse>("/recipes/my-recipes", {
+      params: {
+        limit: params?.limit,
+        current_page: params?.current_page,
+        search: params?.search?.trim() || undefined,
+        status: params?.status || undefined,
+      },
+    });
+  },
+
+  /**
+   * Fetch all recipes for admin dashboard with moderation status filter
+   */
+  getAdminRecipes: async (params?: GetRecipesParams): Promise<GetRecipesResponse> => {
+    return apiClient.get<GetRecipesResponse>("/recipes/admin", {
+      params: {
+        limit: params?.limit,
+        current_page: params?.current_page,
+        search: params?.search?.trim() || undefined,
+        status: params?.status || undefined,
       },
     });
   },
@@ -72,14 +107,33 @@ export const recipeService = {
     );
     return response.data;
   },
+
+  /**
+   * Update recipe moderation status (Approve / Reject)
+   */
+  updateStatus: async (
+    id: string | number,
+    status: "pending" | "approved" | "rejected",
+    rejection_reason?: string | null
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.patch<{ success: boolean; data: { message: string } }>(
+      `/recipes/${encodeURIComponent(id)}/status`,
+      { status, rejection_reason: rejection_reason || null }
+    );
+    return response.data;
+  },
 };
 
 // Standalone function exports for convenient direct imports
 export const getRecipes = recipeService.getAll;
+export const getPublicRecipes = recipeService.getPublic;
+export const getMyRecipes = recipeService.getMyRecipes;
+export const getAdminRecipes = recipeService.getAdminRecipes;
 export const getRecipeByIdOrSlug = recipeService.getByIdOrSlug;
 export const createRecipe = recipeService.create;
 export const updateRecipe = recipeService.update;
 export const deleteRecipe = recipeService.delete;
+export const updateRecipeStatus = recipeService.updateStatus;
 
 export default recipeService;
 

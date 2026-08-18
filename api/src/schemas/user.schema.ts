@@ -1,8 +1,23 @@
 import { z } from "zod";
 import { registry, ErrorResponseSchema } from "../docs/openapi";
 
-// Schema for user registration and login request payload
+// =============================================================================
+// Helper Utilities for Concise OpenAPI Definitions
+// =============================================================================
+const jsonContent = (schema: any) => ({
+    "application/json": { schema },
+});
 
+const jsonResponse = (schema: any, description: string) => ({
+    description,
+    content: jsonContent(schema),
+});
+
+const errResponse = (desc: string) => jsonResponse(ErrorResponseSchema, desc);
+
+// =============================================================================
+// 1. Models & Payload Schemas
+// =============================================================================
 export const CreateUserSchema = registry.register(
     "CreateUser",
     z.object({
@@ -16,13 +31,9 @@ export const CreateUserSchema = registry.register(
         }),
     })
 );
-
+export const createUserSchema = CreateUserSchema;
 export type CreateUserSchemaType = z.infer<typeof CreateUserSchema>;
 
-// Alias for backwards compatibility
-export const createUserSchema = CreateUserSchema;
-
-// User Profile Schema
 export const UserProfileSchema = registry.register(
     "UserProfile",
     z.object({
@@ -35,132 +46,6 @@ export const UserProfileSchema = registry.register(
     })
 );
 
-// Response Schema for User Registration (POST /users)
-export const CreateUserResponseSchema = registry.register(
-    "CreateUserResponse",
-    z.object({
-        message: z.string().openapi({ example: "User created successfully" }),
-        user: UserProfileSchema,
-    })
-);
-
-// Response Schema for User Login (POST /users/login)
-export const LoginUserResponseSchema = registry.register(
-    "LoginUserResponse",
-    z.object({
-        message: z.string().openapi({ example: "User logged in successfully" }),
-        user: z.object({
-            user: z.object({
-                email: z.string().email().openapi({ example: "user@example.com" }),
-                role: z.string().openapi({ example: "user" }),
-            }),
-            token: z.string().openapi({
-                example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciJ9...",
-                description: "JWT access token valid for 1 day",
-            }),
-        }),
-    })
-);
-
-// Register OpenAPI Path: POST /users (Register)
-registry.registerPath({
-    method: "post",
-    path: "/users",
-    tags: ["Users & Authentication"],
-    summary: "Register a new user",
-    description:
-        "Registers a new user account with email and password. Passwords are encrypted using bcrypt.",
-    request: {
-        body: {
-            content: {
-                "application/json": {
-                    schema: CreateUserSchema,
-                },
-            },
-        },
-    },
-    responses: {
-        201: {
-            description: "User registered successfully",
-            content: {
-                "application/json": {
-                    schema: CreateUserResponseSchema,
-                },
-            },
-        },
-        400: {
-            description: "Validation error or user already exists",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        500: {
-            description: "Internal server error",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-    },
-});
-
-// Register OpenAPI Path: POST /users/login (Login)
-registry.registerPath({
-    method: "post",
-    path: "/users/login",
-    tags: ["Users & Authentication"],
-    summary: "User login / authentication",
-    description:
-        "Authenticates a user by validating their email and password, returning a signed JWT access token.",
-    request: {
-        body: {
-            content: {
-                "application/json": {
-                    schema: CreateUserSchema,
-                },
-            },
-        },
-    },
-    responses: {
-        200: {
-            description: "User logged in successfully",
-            content: {
-                "application/json": {
-                    schema: LoginUserResponseSchema,
-                },
-            },
-        },
-        400: {
-            description: "Validation error (invalid email format or short password)",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        401: {
-            description: "Authentication failed (incorrect email or password)",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        500: {
-            description: "Internal server error",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-    },
-});
-
-// Schema for forgot password request payload
 export const ForgotPasswordSchema = registry.register(
     "ForgotPassword",
     z.object({
@@ -170,19 +55,9 @@ export const ForgotPasswordSchema = registry.register(
         }),
     })
 );
-
-export type ForgotPasswordSchemaType = z.infer<typeof ForgotPasswordSchema>;
 export const forgotPasswordSchema = ForgotPasswordSchema;
+export type ForgotPasswordSchemaType = z.infer<typeof ForgotPasswordSchema>;
 
-// Response Schema for Forgot Password
-export const ForgotPasswordResponseSchema = registry.register(
-    "ForgotPasswordResponse",
-    z.object({
-        message: z.string().openapi({ example: "OTP sent successfully" }),
-    })
-);
-
-// Schema for reset password request payload
 export const ResetPasswordSchema = registry.register(
     "ResetPassword",
     z.object({
@@ -200,11 +75,44 @@ export const ResetPasswordSchema = registry.register(
         }),
     })
 );
-
-export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>;
 export const resetPasswordSchema = ResetPasswordSchema;
+export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>;
 
-// Response Schema for Reset Password
+// =============================================================================
+// 2. Response Schemas
+// =============================================================================
+export const CreateUserResponseSchema = registry.register(
+    "CreateUserResponse",
+    z.object({
+        message: z.string().openapi({ example: "User created successfully" }),
+        user: UserProfileSchema,
+    })
+);
+
+export const LoginUserResponseSchema = registry.register(
+    "LoginUserResponse",
+    z.object({
+        message: z.string().openapi({ example: "User logged in successfully" }),
+        user: z.object({
+            user: z.object({
+                email: z.string().email().openapi({ example: "user@example.com" }),
+                role: z.string().openapi({ example: "user" }),
+            }),
+            token: z.string().openapi({
+                example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                description: "JWT access token valid for 1 day",
+            }),
+        }),
+    })
+);
+
+export const ForgotPasswordResponseSchema = registry.register(
+    "ForgotPasswordResponse",
+    z.object({
+        message: z.string().openapi({ example: "OTP sent successfully" }),
+    })
+);
+
 export const ResetPasswordResponseSchema = registry.register(
     "ResetPasswordResponse",
     z.object({
@@ -212,124 +120,71 @@ export const ResetPasswordResponseSchema = registry.register(
     })
 );
 
-// Register OpenAPI Path: POST /users/forgot-password (Forgot Password)
+// =============================================================================
+// 3. OpenAPI Path Registrations
+// =============================================================================
+
+// 1. User Registration (POST /users)
+registry.registerPath({
+    method: "post",
+    path: "/users",
+    tags: ["Users & Authentication"],
+    summary: "Register a new user",
+    description: "Registers a new user account with email and password.",
+    request: { body: { content: jsonContent(CreateUserSchema) } },
+    responses: {
+        201: jsonResponse(CreateUserResponseSchema, "User registered successfully"),
+        400: errResponse("Validation error or user already exists"),
+        500: errResponse("Internal server error"),
+    },
+});
+
+// 2. User Login (POST /users/login)
+registry.registerPath({
+    method: "post",
+    path: "/users/login",
+    tags: ["Users & Authentication"],
+    summary: "User login / authentication",
+    description: "Authenticates a user by email and password, returning a signed JWT access token.",
+    request: { body: { content: jsonContent(CreateUserSchema) } },
+    responses: {
+        200: jsonResponse(LoginUserResponseSchema, "User logged in successfully"),
+        400: errResponse("Validation error (invalid email format or short password)"),
+        401: errResponse("Authentication failed (incorrect email or password)"),
+        500: errResponse("Internal server error"),
+    },
+});
+
+// 3. Forgot Password (POST /users/forgot-password)
 registry.registerPath({
     method: "post",
     path: "/users/forgot-password",
     tags: ["Users & Authentication"],
     summary: "Request password reset OTP",
-    description:
-        "Generates a 6-digit OTP code and sends it to the user's registered email address for password recovery.",
-    request: {
-        body: {
-            content: {
-                "application/json": {
-                    schema: ForgotPasswordSchema,
-                },
-            },
-        },
-    },
+    description: "Generates a 6-digit OTP code and sends it to the user's email for password recovery.",
+    request: { body: { content: jsonContent(ForgotPasswordSchema) } },
     responses: {
-        200: {
-            description: "OTP sent successfully",
-            content: {
-                "application/json": {
-                    schema: ForgotPasswordResponseSchema,
-                },
-            },
-        },
-        400: {
-            description: "Validation error (invalid email format)",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        404: {
-            description: "Email not found",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        429: {
-            description: "Too many reset requests. Rate limited.",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        500: {
-            description: "Internal server error",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
+        200: jsonResponse(ForgotPasswordResponseSchema, "OTP sent successfully"),
+        400: errResponse("Validation error (invalid email format)"),
+        404: errResponse("Email not found"),
+        429: errResponse("Too many reset requests. Rate limited."),
+        500: errResponse("Internal server error"),
     },
 });
 
-// Register OpenAPI Path: POST /users/reset-password (Reset Password)
+// 4. Reset Password (POST /users/reset-password)
 registry.registerPath({
     method: "post",
     path: "/users/reset-password",
     tags: ["Users & Authentication"],
     summary: "Reset password using OTP",
-    description:
-        "Verifies the OTP code sent to the email and updates the user's password.",
-    request: {
-        body: {
-            content: {
-                "application/json": {
-                    schema: ResetPasswordSchema,
-                },
-            },
-        },
-    },
+    description: "Verifies OTP code and updates the user's password.",
+    request: { body: { content: jsonContent(ResetPasswordSchema) } },
     responses: {
-        200: {
-            description: "Password reset successfully",
-            content: {
-                "application/json": {
-                    schema: ResetPasswordResponseSchema,
-                },
-            },
-        },
-        400: {
-            description: "Validation error, invalid OTP, or expired reset code",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        404: {
-            description: "Email not found",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        429: {
-            description: "Maximum reset attempts exceeded. Account locked temporarily.",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
-        500: {
-            description: "Internal server error",
-            content: {
-                "application/json": {
-                    schema: ErrorResponseSchema,
-                },
-            },
-        },
+        200: jsonResponse(ResetPasswordResponseSchema, "Password reset successfully"),
+        400: errResponse("Validation error, invalid OTP, or expired reset code"),
+        404: errResponse("Email not found"),
+        429: errResponse("Maximum reset attempts exceeded. Account locked temporarily."),
+        500: errResponse("Internal server error"),
     },
 });

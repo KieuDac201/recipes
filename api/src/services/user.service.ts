@@ -34,10 +34,11 @@ const loginUser = async (user: UserPayload) => {
         throw new AppError("Email or password is not correct", 401)
     }
 
-    const token = jwt.sign({ email: existUser.email, role: existUser.role }, SECRET_KEY!, { expiresIn: "1d" })
+    const token = jwt.sign({ id: existUser.id, email: existUser.email, role: existUser.role }, SECRET_KEY!, { expiresIn: "1d" })
 
     return {
         user: {
+            id: existUser.id,
             email: existUser.email,
             role: existUser.role,
         },

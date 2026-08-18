@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getRecipes } from "@/src/services/recipeApi";
 import type { Recipe, PaginationMeta } from "@/src/types/recipe";
+import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
 import RecipeCard from "./RecipeCard";
 import RecipeSkeletonCard from "./RecipeSkeletonCard";
+import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
 
 const PAGE_SIZE = 8;
 
@@ -26,8 +28,6 @@ export default function RecipeListing() {
   }, [search]);
 
   // Initial fetch and fetch when search changes
-  const isFirstRender = useRef(true);
-
   const fetchInitialRecipes = useCallback(async (searchTerm: string) => {
     setIsLoading(true);
     setError(null);
@@ -52,7 +52,7 @@ export default function RecipeListing() {
   }, [debouncedSearch, fetchInitialRecipes]);
 
   // Load more handler
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     if (!pagination || isLoadingMore) return;
     const nextPage = (pagination.currentPage || 1) + 1;
     if (nextPage > (pagination.totalPage || 1)) return;
@@ -71,11 +71,18 @@ export default function RecipeListing() {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [pagination, isLoadingMore, debouncedSearch]);
 
   const hasMore = pagination
     ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
     : false;
+
+  // Use common infinite scroll hook
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    isLoading: isLoading || isLoadingMore,
+    onLoadMore: handleLoadMore,
+  });
 
   return (
     <>
@@ -162,47 +169,12 @@ export default function RecipeListing() {
             ))}
           </section>
 
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="flex justify-center mt-12 mb-6">
-              <button
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                className="bg-[#ff6b6b] text-white font-[var(--font-headline)] text-base font-bold px-8 py-3.5 rounded-full shadow-[0_4px_14px_rgba(255,107,107,0.35)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,107,107,0.45)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 cursor-pointer"
-              >
-                {isLoadingMore ? (
-                  <>
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Đang tải thêm...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                    Xem Thêm Công Thức
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {/* Sentinel element for infinite scrolling */}
+          <InfiniteScrollSentinel
+            sentinelRef={sentinelRef}
+            isLoadingMore={isLoadingMore}
+            loadingText="Đang tải thêm món ngon..."
+          />
         </>
       )}
     </>

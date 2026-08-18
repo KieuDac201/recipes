@@ -2,20 +2,48 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { recipeService, deleteRecipe } from "@/src/services/recipeApi";
-import { Recipe, PaginationMeta } from "@/src/types/recipe";
+import { recipeService, deleteRecipe, getAdminRecipes, updateRecipeStatus } from "@/src/services/recipeApi";
+import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
 import { ApiError } from "@/src/services/apiClient";
+import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import ApproveRecipeModal from "./components/ApproveRecipeModal";
+import RejectRecipeModal from "./components/RejectRecipeModal";
+import DeleteRecipeModal from "./components/DeleteRecipeModal";
+import AdminRecipeRow from "./components/AdminRecipeRow";
+import AdminEmptyState from "./components/AdminEmptyState";
+import InfiniteScrollSentinel from "../components/InfiniteScrollSentinel";
+
+const ADMIN_STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
+  { label: "Tất cả", value: "all" },
+  { label: "Chờ duyệt", value: "pending" },
+  { label: "Đã duyệt", value: "approved" },
+  { label: "Bị từ chối", value: "rejected" },
+];
+
+const ADMIN_PAGE_SIZE = 10;
 
 export default function AdminDashboardPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activeStatus, setActiveStatus] = useState<RecipeStatus>("all");
 
   // Delete modal state
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Approve modal state
+  const [recipeToApprove, setRecipeToApprove] = useState<Recipe | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
+
+  // Reject modal state
+  const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectError, setRejectError] = useState<string | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -33,14 +61,15 @@ export default function AdminDashboardPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch recipes from backend API
-  const loadRecipes = useCallback(async (search?: string) => {
+  // Fetch recipes from admin API
+  const loadRecipes = useCallback(async (search?: string, status: RecipeStatus = "all") => {
     setIsLoading(true);
     try {
-      const res = await recipeService.getAll({
-        limit: 50,
+      const res = await getAdminRecipes({
+        limit: ADMIN_PAGE_SIZE,
         current_page: 1,
         search: search || undefined,
+        status: status,
       });
       setRecipes(res.data || []);
       setPagination(res.pagination || null);
@@ -57,10 +86,44 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  // Initial load and on search change
+  // Initial load and on search/status change
   useEffect(() => {
-    loadRecipes(debouncedSearch);
-  }, [debouncedSearch, loadRecipes]);
+    loadRecipes(debouncedSearch, activeStatus);
+  }, [debouncedSearch, activeStatus, loadRecipes]);
+
+  // Load more handler
+  const handleLoadMore = useCallback(async () => {
+    if (!pagination || isLoadingMore) return;
+    const nextPage = (pagination.currentPage || 1) + 1;
+    if (nextPage > (pagination.totalPage || 1)) return;
+
+    setIsLoadingMore(true);
+    try {
+      const res = await getAdminRecipes({
+        limit: ADMIN_PAGE_SIZE,
+        current_page: nextPage,
+        search: debouncedSearch || undefined,
+        status: activeStatus,
+      });
+      setRecipes((prev) => [...prev, ...(res.data || [])]);
+      setPagination(res.pagination || null);
+    } catch (err: any) {
+      console.error("[AdminDashboard] Error loading more recipes:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [pagination, isLoadingMore, debouncedSearch, activeStatus]);
+
+  const hasMore = pagination
+    ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
+    : false;
+
+  // Use common infinite scroll hook
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    isLoading: isLoading || isLoadingMore,
+    onLoadMore: handleLoadMore,
+  });
 
   // Handle delete recipe
   const handleConfirmDelete = async () => {
@@ -81,6 +144,69 @@ export default function AdminDashboardPage() {
       showToast(msg, "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Handle approve recipe
+  const handleConfirmApprove = async () => {
+    if (!recipeToApprove) return;
+
+    setIsApproving(true);
+    try {
+      await updateRecipeStatus(recipeToApprove.id, "approved");
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r.id === recipeToApprove.id
+            ? { ...r, status: "approved", rejection_reason: null }
+            : r
+        )
+      );
+      showToast(`Đã duyệt công thức "${recipeToApprove.title}" thành công!`);
+      setRecipeToApprove(null);
+    } catch (err: any) {
+      console.error("[AdminDashboard] Error approving recipe:", err);
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Đã xảy ra lỗi khi duyệt công thức. Vui lòng thử lại.";
+      showToast(msg, "error");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  // Handle reject recipe
+  const handleConfirmReject = async () => {
+    if (!recipeToReject) return;
+
+    if (!rejectionReason.trim()) {
+      setRejectError("Vui lòng nhập lý do từ chối công thức.");
+      return;
+    }
+
+    setIsRejecting(true);
+    try {
+      await updateRecipeStatus(recipeToReject.id, "rejected", rejectionReason.trim());
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r.id === recipeToReject.id
+            ? { ...r, status: "rejected", rejection_reason: rejectionReason.trim() }
+            : r
+        )
+      );
+      showToast(`Đã từ chối công thức "${recipeToReject.title}"!`);
+      setRecipeToReject(null);
+      setRejectionReason("");
+      setRejectError(null);
+    } catch (err: any) {
+      console.error("[AdminDashboard] Error rejecting recipe:", err);
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Đã xảy ra lỗi khi từ chối công thức. Vui lòng thử lại.";
+      showToast(msg, "error");
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -209,25 +335,45 @@ export default function AdminDashboardPage() {
 
       {/* ── Recent Recipes Section ────────────────────────────── */}
       <section className="relative z-10">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a]">
-              Danh Sách Công Thức
-            </h3>
-            <button
-              type="button"
-              onClick={() => loadRecipes(debouncedSearch)}
-              disabled={isLoading}
-              className="p-1.5 rounded-lg hover:bg-[#efeeea] text-[#584140] hover:text-[#ae2f34] transition-colors cursor-pointer disabled:opacity-50"
-              title="Tải lại danh sách"
-            >
-              <span className={`material-symbols-outlined text-[20px] ${isLoading ? "animate-spin" : ""}`}>
-                refresh
-              </span>
-            </button>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a]">
+                Danh Sách Công Thức
+              </h3>
+              <button
+                type="button"
+                onClick={() => loadRecipes(debouncedSearch, activeStatus)}
+                disabled={isLoading}
+                className="p-1.5 rounded-lg hover:bg-[#efeeea] text-[#584140] hover:text-[#ae2f34] transition-colors cursor-pointer disabled:opacity-50"
+                title="Tải lại danh sách"
+              >
+                <span className={`material-symbols-outlined text-[20px] ${isLoading ? "animate-spin" : ""}`}>
+                  refresh
+                </span>
+              </button>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="flex items-center gap-1 bg-[#efeeea] p-1 rounded-xl">
+              {ADMIN_STATUS_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveStatus(tab.value)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeStatus === tab.value
+                      ? "bg-white text-[#ae2f34] shadow-sm font-bold"
+                      : "text-[#584140] hover:text-[#1b1c1a]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex items-center gap-4 w-full md:w-auto">
             {/* Search Input Box */}
             <div className="relative flex-1 sm:w-72">
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8c706f] text-[18px]">
@@ -289,209 +435,71 @@ export default function AdminDashboardPage() {
 
             {/* Empty State */}
             {!isLoading && recipes.length === 0 && (
-              <div className="p-12 text-center flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-[#ff6b6b]/10 flex items-center justify-center text-[#ae2f34] mb-3">
-                  <span className="material-symbols-outlined text-[32px]">restaurant_menu</span>
-                </div>
-                <h4 className="font-[var(--font-headline)] font-bold text-lg text-[#1b1c1a] mb-1">
-                  {debouncedSearch ? "Không tìm thấy công thức phù hợp" : "Chưa có công thức nào"}
-                </h4>
-                <p className="text-sm text-[#584140] max-w-md mb-6">
-                  {debouncedSearch
-                    ? `Không có kết quả nào khớp với từ khóa "${debouncedSearch}". Hãy thử tìm kiếm từ khóa khác.`
-                    : "Bắt đầu thêm công thức món ăn mới để quản lý và chia sẻ trên hệ thống GourmetPop."}
-                </p>
-                {debouncedSearch ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="px-4 py-2 rounded-xl bg-[#efeeea] text-[#1b1c1a] font-[var(--font-headline)] text-xs font-bold hover:bg-[#e3e2df] transition-colors cursor-pointer"
-                  >
-                    Xóa Bộ Lọc Tìm Kiếm
-                  </button>
-                ) : (
-                  <Link
-                    href="/admin/recipes/create"
-                    className="px-5 py-2.5 rounded-xl bg-[#ff6b6b] text-white font-[var(--font-headline)] text-xs font-bold hover:bg-[#e05656] shadow-sm transition-all flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">add</span>
-                    Tạo Công Thức Đầu Tiên
-                  </Link>
-                )}
-              </div>
+              <AdminEmptyState
+                searchQuery={debouncedSearch}
+                onClearSearch={() => setSearchQuery("")}
+              />
             )}
 
             {/* Actual Recipes List */}
             {!isLoading &&
               recipes.map((item) => (
-                <div
+                <AdminRecipeRow
                   key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-4 md:p-5 hover:bg-[#faf9f5] transition-colors items-center group"
-                >
-                  {/* Title & Image & Cooking Info */}
-                  <div className="col-span-1 md:col-span-6 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] flex-shrink-0 overflow-hidden flex items-center justify-center border border-[#e0bfbd]/40 relative group-hover:shadow-sm transition-shadow">
-                      {item.image_url ? (
-                        <img
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                          src={item.image_url}
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <span className="material-symbols-outlined text-[#8c706f]">image</span>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-[var(--font-headline)] text-sm font-bold text-[#1b1c1a] truncate group-hover:text-[#ae2f34] transition-colors">
-                          {item.title}
-                        </p>
-                        <span className="hidden sm:inline-block text-[11px] font-mono text-[#8c706f] bg-[#efeeea] px-1.5 py-0.5 rounded">
-                          #{item.id}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-[#8c706f]">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">timer</span>
-                          {item.prep_time_minutes + item.cook_time_minutes} phút
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">group</span>
-                          {item.servings} phần
-                        </span>
-                        <span className="font-mono text-[11px] text-[#8c706f]/80 truncate max-w-[140px]">
-                          /{item.slug}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status & Date */}
-                  <div className="col-span-1 md:col-span-3 flex flex-wrap md:flex-col items-start gap-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#00b083]/15 text-[#006c4f] font-[var(--font-headline)] text-xs font-bold">
-                      <span className="w-2 h-2 rounded-full bg-[#006c4f]" />
-                      Đã xuất bản
-                    </span>
-                    <span className="text-xs text-[#8c706f]">
-                      Ngày tạo: {formatDate(item.created_at)}
-                    </span>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="col-span-1 md:col-span-3 flex items-center justify-between md:justify-end gap-2 text-sm text-[#584140]">
-                    <div className="flex items-center gap-1">
-                      {/* View button */}
-                      <Link
-                        href={`/recipes/${item.slug || item.id}`}
-                        className="p-2 rounded-xl hover:bg-[#efeeea] text-[#584140] hover:text-[#006c4f] transition-all cursor-pointer"
-                        title="Xem trang công thức"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">visibility</span>
-                      </Link>
-
-                      {/* Edit button */}
-                      <Link
-                        href={`/admin/recipes/${item.id}/edit`}
-                        className="p-2 rounded-xl hover:bg-[#efeeea] text-[#584140] hover:text-[#ae2f34] transition-all cursor-pointer"
-                        title="Chỉnh sửa công thức"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">edit</span>
-                      </Link>
-
-                      {/* Delete button */}
-                      <button
-                        type="button"
-                        onClick={() => setRecipeToDelete(item)}
-                        className="p-2 rounded-xl hover:bg-[#ffdad6] text-[#584140] hover:text-[#ba1a1a] transition-all cursor-pointer"
-                        title="Xóa công thức"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  recipe={item}
+                  onApprove={(r) => setRecipeToApprove(r)}
+                  onReject={(r) => {
+                    setRecipeToReject(r);
+                    setRejectionReason(r.rejection_reason || "");
+                    setRejectError(null);
+                  }}
+                  onDelete={(r) => setRecipeToDelete(r)}
+                />
               ))}
+
+            {/* Infinite Scroll Sentinel */}
+            {!isLoading && recipes.length > 0 && (
+              <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                isLoadingMore={isLoadingMore}
+                loadingText="Đang tải thêm công thức..."
+              />
+            )}
           </div>
         </div>
       </section>
 
-      {/* ── Delete Confirmation Modal ─────────────────────────────── */}
-      {recipeToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[28px] max-w-md w-full p-6 md:p-8 shadow-2xl border border-[#efeeea] animate-in zoom-in-95 duration-200 relative">
-            <div className="w-14 h-14 rounded-2xl bg-[#ffdad6] text-[#ba1a1a] flex items-center justify-center mb-5 mx-auto">
-              <span className="material-symbols-outlined text-[32px]">delete_forever</span>
-            </div>
+      {/* ── Action Modals ────────────────────────────────────────── */}
+      <ApproveRecipeModal
+        recipe={recipeToApprove}
+        isLoading={isApproving}
+        onClose={() => setRecipeToApprove(null)}
+        onConfirm={handleConfirmApprove}
+      />
 
-            <h3 className="font-[var(--font-headline)] text-2xl font-extrabold text-[#1b1c1a] text-center mb-2">
-              Xác Nhận Xóa Công Thức?
-            </h3>
+      <RejectRecipeModal
+        recipe={recipeToReject}
+        reason={rejectionReason}
+        error={rejectError}
+        isLoading={isRejecting}
+        onChangeReason={(val) => {
+          setRejectionReason(val);
+          if (rejectError) setRejectError(null);
+        }}
+        onClose={() => {
+          setRecipeToReject(null);
+          setRejectionReason("");
+          setRejectError(null);
+        }}
+        onConfirm={handleConfirmReject}
+      />
 
-            <p className="text-sm text-[#584140] text-center mb-6 leading-relaxed">
-              Bạn có chắc chắn muốn xóa công thức món ăn này? Thao tác này sẽ xóa vĩnh viễn
-              dữ liệu bao gồm các nguyên liệu và các bước hướng dẫn liên quan.
-            </p>
-
-            {/* Target Recipe Preview Card */}
-            <div className="p-3.5 rounded-2xl bg-[#faf9f5] border border-[#efeeea] flex items-center gap-3.5 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] overflow-hidden flex-shrink-0 flex items-center justify-center">
-                {recipeToDelete.image_url ? (
-                  <img
-                    src={recipeToDelete.image_url}
-                    alt={recipeToDelete.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="material-symbols-outlined text-[#8c706f]">image</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-[var(--font-headline)] text-sm font-bold text-[#1b1c1a] truncate">
-                  {recipeToDelete.title}
-                </p>
-                <p className="text-xs text-[#8c706f] truncate">
-                  ID: #{recipeToDelete.id} · /{recipeToDelete.slug}
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Buttons */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setRecipeToDelete(null)}
-                disabled={isDeleting}
-                className="flex-1 py-3 rounded-xl bg-[#efeeea] text-[#584140] font-[var(--font-headline)] text-sm font-bold hover:bg-[#e3e2df] transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Hủy Bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="flex-1 py-3 rounded-xl bg-[#ba1a1a] text-white font-[var(--font-headline)] text-sm font-bold hover:bg-[#93000a] transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_0_#410006] disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin text-[18px]">
-                      progress_activity
-                    </span>
-                    Đang Xóa...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                    Xóa Vĩnh Viễn
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteRecipeModal
+        recipe={recipeToDelete}
+        isLoading={isDeleting}
+        onClose={() => setRecipeToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </main>
   );
 }

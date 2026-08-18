@@ -52,6 +52,8 @@ export interface Instruction extends BaseEntity {
   recipe_id?: number;
 }
 
+export type RecipeStatus = "pending" | "approved" | "rejected" | "all";
+
 export interface Recipe extends BaseEntity, TimestampedEntity {
   title: string;
   slug: string;
@@ -60,6 +62,9 @@ export interface Recipe extends BaseEntity, TimestampedEntity {
   prep_time_minutes: number;
   cook_time_minutes: number;
   servings: number;
+  author_id?: number | null;
+  status?: RecipeStatus;
+  rejection_reason?: string | null;
 }
 
 export interface RecipeDetail extends Recipe {
@@ -85,6 +90,15 @@ export type UpdateRecipeBody = Partial<RecipeBody>;
 export interface GetRecipesParams extends PaginationParams {
   category_id?: number;
   category_slug?: string;
+  status?: RecipeStatus;
+}
+
+export interface GetMyRecipesParams extends PaginationParams {
+  status?: RecipeStatus;
+}
+
+export interface GetAdminRecipesParams extends PaginationParams {
+  status?: RecipeStatus;
 }
 
 export type GetRecipesResponse = PaginatedApiResponse<Recipe>;

@@ -1,24 +1,42 @@
 import { pool, query } from "../config/db"
-import { Recipe, RecipeBody, RecipeDetail } from "../types/recipe.type"
+import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type"
 
-const findAllRecipes = async (limit: number, offset: number, search?: string): Promise<{ recipes: Recipe[], totalPage: number }> => {
-    const searchValue = search || ""
+const findAllRecipes = async (limit: number, offset: number, search?: string, status?: RecipeStatus, authorId?: number): Promise<{ recipes: Recipe[], totalPage: number }> => {
+
+    const conditions = []
+    const params = []
+    if (search) {
+        conditions.push(`unaccent(LOWER(title)) LIKE unaccent(LOWER($${conditions.length + 1}))`)
+        params.push(`%${search}%`)
+    }
+    if (status && status !== 'all') {
+        conditions.push(`status = $${conditions.length + 1}`)
+        params.push(status)
+    }
+
+    if (authorId) {
+        conditions.push(`author_id = $${conditions.length + 1}`)
+        params.push(authorId)
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
     /*sql*/
     const dataSQL = `
         SELECT * FROM recipes 
-        WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER($3))
+        ${whereClause}
         ORDER BY id
-        LIMIT $1 OFFSET $2
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     /*sql*/
     const totalCountSQL = `
         SELECT COUNT(*) as total FROM recipes
-        WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER($1))
+        ${whereClause}
     `;
 
+    console.log({ params, conditions })
+
     const [result, totalCount] = await Promise.all([
-        query(dataSQL, [limit, offset, `%${searchValue}%`]),
-        query(totalCountSQL, [`%${searchValue}%`]),
+        query(dataSQL, [...params, limit, offset]),
+        query(totalCountSQL, [...params]),
     ]);
     const totalPage = Math.ceil(totalCount.rows[0].total / limit);
 
@@ -231,11 +249,23 @@ const isImageUsedInRecipe
         return (res.rowCount ?? 0) > 0;
     };
 
+const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_reason?: string) => {
+    /*sql*/
+    const updateSql = `
+        UPDATE recipes
+        SET status = $1, rejection_reason = $3
+        WHERE id = $2
+        `
+    await query(updateSql, [status, id, rejection_reason])
+
+}
+
 export {
     findAllRecipes,
     findRecipeById,
     createRecipe,
     isImageUsedInRecipe,
     deleteRecipe,
-    updateRecipe
+    updateRecipe,
+    updateRecipeStatus
 }
