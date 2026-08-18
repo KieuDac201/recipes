@@ -8,16 +8,11 @@ import rateLimit from "express-rate-limit";
 const app = express();
 
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 phút
+    windowMs: 10 * 60 * 1000, // 10 phút
     max: 100, // Tối đa 100 requests/IP
     message: "Too many requests from this IP, please try again after 15 minutes",
 });
 
-app.use(apiLimiter)
-
-app.use(express.json());
-
-// CORS middleware
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", process.env.ACCESS_CONTROL_ALLOW_ORIGIN || "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
@@ -27,6 +22,13 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+app.use(apiLimiter)
+
+app.use(express.json());
+
+// CORS middleware
+
 
 // Main API routes
 app.use("/api", router);
