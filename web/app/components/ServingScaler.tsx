@@ -27,7 +27,7 @@ export default function ServingScaler({ ingredients, baseServings }: ServingScal
   }
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(255,107,107,0.1)] sticky top-32">
+    <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(255,107,107,0.1)] top-32">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 border-b border-[#efeeea] pb-4">
         <h2 className="font-[var(--font-headline)] text-2xl font-bold text-[#1b1c1a]">
@@ -98,11 +98,10 @@ function IngredientItem({
         aria-checked={checked}
         id={id}
         onClick={() => setChecked((v) => !v)}
-        className={`mt-0.5 w-5 h-5 shrink-0 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all duration-200 ${
-          checked
+        className={`mt-0.5 w-5 h-5 shrink-0 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all duration-200 ${checked
             ? "bg-[#ff6b6b] border-[#ff6b6b]"
             : "border-[#e0bfbd] bg-transparent"
-        }`}
+          }`}
       >
         {checked && (
           <svg viewBox="0 0 12 10" className="w-3 h-3 text-white fill-current">
@@ -114,9 +113,8 @@ function IngredientItem({
       <label
         htmlFor={id}
         onClick={() => setChecked((v) => !v)}
-        className={`flex-grow cursor-pointer text-sm leading-snug transition-all duration-200 ${
-          checked ? "line-through text-[#8c706f]" : "text-[#1b1c1a]"
-        }`}
+        className={`flex-grow cursor-pointer text-sm leading-snug transition-all duration-200 ${checked ? "line-through text-[#8c706f]" : "text-[#1b1c1a]"
+          }`}
       >
         <span className="font-semibold">{formatQty(ingredient.amount)} {ingredient.unit}</span>{" "}
         {ingredient.name}

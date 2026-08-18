@@ -8,6 +8,7 @@ import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
 import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
 import RecipeSkeletonCard from "@/app/components/RecipeSkeletonCard";
 import InfiniteScrollSentinel from "@/app/components/InfiniteScrollSentinel";
+import Tabs from "@/app/components/Tabs";
 
 const STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
   { label: "Tất cả", value: "all" },
@@ -149,24 +150,13 @@ export default function MyRecipesPage() {
         {/* Filter Controls: Tabs + Search */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-8">
           {/* Tabs */}
-          <div className="flex items-center gap-1.5 bg-[#f0eee9] p-1.5 rounded-2xl overflow-x-auto">
-            {STATUS_TABS.map((tab) => {
-              const isActive = activeTab === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => handleTabChange(tab.value)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-white text-[#ae2f34] shadow-sm font-bold"
-                      : "text-[#8c706f] hover:text-[#1b1c1a]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <Tabs<RecipeStatus>
+            tabs={STATUS_TABS}
+            activeTab={activeTab}
+            onChange={handleTabChange}
+            variant="white"
+            ariaLabel="Lọc trạng thái món của tôi"
+          />
 
           {/* Search Bar */}
           <div className="relative w-full md:w-72">

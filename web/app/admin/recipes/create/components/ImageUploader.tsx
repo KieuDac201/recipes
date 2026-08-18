@@ -97,7 +97,7 @@ export function ImageUploader({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !isUploading && !disabled && fileInputRef.current?.click()}
-          className={`w-full md:w-44 h-32 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer relative overflow-hidden group select-none ${
+          className={`w-full md:w-48 h-36 md:h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer relative overflow-hidden group select-none ${
             isDragging
               ? "border-[#ff6b6b] bg-[#ffdad8]/30 scale-[1.02]"
               : "border-[#8c706f]/30 bg-[#faf9f5] hover:bg-[#efeeea] hover:border-[#ff6b6b]/60"
@@ -156,7 +156,7 @@ export function ImageUploader({
         </div>
 
         {uploadError && (
-          <p className="text-[11px] text-[#ba1a1a] font-medium leading-tight max-w-44">
+          <p className="text-[11px] text-[#ba1a1a] font-medium leading-tight max-w-48">
             {uploadError}
           </p>
         )}
@@ -177,7 +177,7 @@ export function ImageUploader({
       />
 
       {value ? (
-        <div className="relative rounded-3xl overflow-hidden border-2 border-[#e3e2df] aspect-[21/9] max-h-72 group shadow-sm bg-[#faf9f5]">
+        <div className="relative rounded-3xl overflow-hidden border-2 border-[#e3e2df] aspect-[16/7] md:aspect-[21/8] min-h-[260px] md:min-h-[340px] max-h-[440px] group shadow-sm bg-[#faf9f5]">
           <img
             src={value}
             alt="Ảnh xem trước món ăn"
@@ -218,7 +218,7 @@ export function ImageUploader({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !isUploading && !disabled && fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all group relative overflow-hidden select-none ${
+          className={`border-2 border-dashed rounded-3xl p-12 md:p-14 min-h-[220px] md:min-h-[280px] flex flex-col items-center justify-center text-center cursor-pointer transition-all group relative overflow-hidden select-none ${
             isDragging
               ? "border-[#ff6b6b] bg-[#ffdad8]/30 scale-[1.01]"
               : "border-[#8c706f]/40 bg-[#f4f4f0] hover:bg-[#efeeea] hover:border-[#ff6b6b]"

@@ -30,7 +30,7 @@ export default function AdminSidebar() {
     <>
       {/* ── Mobile Top Bar ────────────────────────────────────────── */}
       <div className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#f4f4f0] border-b border-[#e3e2df] sticky top-0 z-40">
-        <Link href="/admin" className="font-extrabold text-2xl text-[#ae2f34] font-[var(--font-headline)]">
+        <Link href="/" className="font-extrabold text-2xl text-[#ae2f34] font-[var(--font-headline)]">
           GourmetPop
         </Link>
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export default function AdminSidebar() {
       <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f4f4f0] shadow-sm p-6 gap-2 z-50 border-r border-[#e3e2df]/60">
         {/* Brand / Header */}
         <div className="mb-8">
-          <Link href="/admin">
+          <Link href="/">
             <h1 className="font-[var(--font-headline)] text-2xl font-extrabold text-[#ae2f34] tracking-tight hover:opacity-90 transition-opacity">
               GourmetPop
             </h1>

@@ -7,6 +7,7 @@ import { Step1BasicInfo } from "../../create/components/Step1BasicInfo";
 import { Step2IngredientsInstructions } from "../../create/components/Step2IngredientsInstructions";
 import { Step3PreviewPublish } from "../../create/components/Step3PreviewPublish";
 import { AVAILABLE_CATEGORIES } from "../../create/components/CategorySelector";
+import Tabs from "@/app/components/Tabs";
 import { getRecipeByIdOrSlug, updateRecipe } from "@/src/services/recipeApi";
 import { ApiError } from "@/src/services/apiClient";
 import {
@@ -93,30 +94,30 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       ingredients:
         detail.ingredients && detail.ingredients.length > 0
           ? detail.ingredients.map((ing, idx) => ({
-              id: `ing-${ing.id || idx}-${Date.now()}`,
-              name: ing.name || "",
-              amount: String(ing.amount ?? ""),
-              unit: ing.unit || "g",
-            }))
+            id: `ing-${ing.id || idx}-${Date.now()}`,
+            name: ing.name || "",
+            amount: String(ing.amount ?? ""),
+            unit: ing.unit || "g",
+          }))
           : [{ id: `ing-${Date.now()}`, amount: "", unit: "g", name: "" }],
       instructions:
         detail.instructions && detail.instructions.length > 0
           ? detail.instructions.map((step, idx) => ({
-              id: `step-${step.id || idx}-${Date.now()}`,
-              stepNumber: step.step_number || idx + 1,
-              title: `Bước ${step.step_number || idx + 1}`,
-              instruction: step.instruction || "",
-              imageUrl: step.image_url || null,
-            }))
+            id: `step-${step.id || idx}-${Date.now()}`,
+            stepNumber: step.step_number || idx + 1,
+            title: `Bước ${step.step_number || idx + 1}`,
+            instruction: step.instruction || "",
+            imageUrl: step.image_url || null,
+          }))
           : [
-              {
-                id: `step-${Date.now()}`,
-                stepNumber: 1,
-                title: "Bước 1",
-                instruction: "",
-                imageUrl: null,
-              },
-            ],
+            {
+              id: `step-${Date.now()}`,
+              stepNumber: 1,
+              title: "Bước 1",
+              instruction: "",
+              imageUrl: null,
+            },
+          ],
     });
   }, []);
 
@@ -318,8 +319,8 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         err instanceof ApiError
           ? err.message
           : err?.response?.data?.error ||
-            err?.message ||
-            "Đã xảy ra lỗi khi cập nhật công thức. Vui lòng thử lại.";
+          err?.message ||
+          "Đã xảy ra lỗi khi cập nhật công thức. Vui lòng thử lại.";
       setUpdateError(errMsg);
       showToast(`Lỗi: ${errMsg}`);
     } finally {
@@ -382,16 +383,16 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       )}
 
       {/* ── Stepper Breadcrumb Header ─────────────────────────────── */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 pb-6 border-b border-[#e3e2df] gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[#584140] mb-2 font-[var(--font-headline)] text-xs font-bold uppercase tracking-wider">
-            <Link href="/admin" className="hover:text-[#ae2f34] transition-colors">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-8 pb-6 border-b border-[#e3e2df] gap-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-[#584140] mb-2 font-[var(--font-headline)] text-xs font-bold uppercase tracking-wider">
+            <Link href="/admin" className="hover:text-[#ae2f34] transition-colors whitespace-nowrap">
               Quản Trị
             </Link>
-            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span>Chỉnh Sửa Công Thức #{recipeId}</span>
-            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span className="text-[#ae2f34]">Bước {currentStep} / 3</span>
+            <span className="material-symbols-outlined text-[16px] select-none opacity-60">chevron_right</span>
+            <span className="whitespace-nowrap">Chỉnh Sửa Công Thức #{recipeId}</span>
+            <span className="material-symbols-outlined text-[16px] select-none opacity-60">chevron_right</span>
+            <span className="text-[#ae2f34] whitespace-nowrap">Bước {currentStep} / 3</span>
           </div>
 
           <h1 className="font-[var(--font-headline)] text-3xl md:text-4xl font-extrabold text-[#1b1c1a] tracking-tight">
@@ -410,41 +411,17 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Stepper Navigation Pills */}
-        <div className="flex items-center gap-1.5 bg-[#f4f4f0] p-1.5 rounded-full border border-[#e3e2df] select-none">
-          <button
-            type="button"
-            onClick={() => goToStep(1)}
-            className={`px-4 py-2 rounded-full text-xs font-[var(--font-headline)] font-bold transition-all cursor-pointer ${
-              currentStep === 1
-                ? "bg-[#ff6b6b] text-white shadow-sm"
-                : "text-[#584140] hover:bg-[#e9e8e4]"
-            }`}
-          >
-            1. Thông Tin Cơ Bản
-          </button>
-          <button
-            type="button"
-            onClick={() => goToStep(2)}
-            className={`px-4 py-2 rounded-full text-xs font-[var(--font-headline)] font-bold transition-all cursor-pointer ${
-              currentStep === 2
-                ? "bg-[#ff6b6b] text-white shadow-sm"
-                : "text-[#584140] hover:bg-[#e9e8e4]"
-            }`}
-          >
-            2. Nguyên Liệu & Các Bước
-          </button>
-          <button
-            type="button"
-            onClick={() => goToStep(3)}
-            className={`px-4 py-2 rounded-full text-xs font-[var(--font-headline)] font-bold transition-all cursor-pointer ${
-              currentStep === 3
-                ? "bg-[#ff6b6b] text-white shadow-sm"
-                : "text-[#584140] hover:bg-[#e9e8e4]"
-            }`}
-          >
-            3. Xem Lại & Cập Nhật
-          </button>
-        </div>
+        <Tabs<1 | 2 | 3>
+          tabs={[
+            { label: "1. Thông Tin Cơ Bản", value: 1 },
+            { label: "2. Nguyên Liệu & Các Bước", value: 2 },
+            { label: "3. Xem Lại & Cập Nhật", value: 3 },
+          ]}
+          activeTab={currentStep}
+          onChange={goToStep}
+          variant="coral"
+          ariaLabel="Các bước chỉnh sửa công thức"
+        />
       </header>
 
       {/* ── STEP 1: Basic Info & Hero Image ───────────────────────── */}

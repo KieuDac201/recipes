@@ -32,7 +32,6 @@ const findAllRecipes = async (limit: number, offset: number, search?: string, st
         ${whereClause}
     `;
 
-    console.log({ params, conditions })
 
     const [result, totalCount] = await Promise.all([
         query(dataSQL, [...params, limit, offset]),

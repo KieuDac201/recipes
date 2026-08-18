@@ -272,14 +272,14 @@ export function Step2IngredientsInstructions({
         )}
 
         {/* Steps Timeline Container */}
-        <div className="relative pl-8 space-y-8 before:absolute before:inset-y-0 before:left-[19px] before:w-[2px] before:bg-[#e3e2df]">
+        <div className="relative pl-12 space-y-8 before:absolute before:inset-y-0 before:left-6 before:-translate-x-1/2 before:w-[2px] before:bg-[#e3e2df]">
           {formData.instructions.map((step) => (
             <div
               key={step.id}
               className="relative bg-[#faf9f5] rounded-2xl p-5 md:p-6 border border-[#efeeea] hover:border-[#ff6b6b]/40 transition-colors"
             >
               {/* Step Number Badge */}
-              <div className="absolute left-[-41px] top-6 w-8 h-8 rounded-full bg-[#ff6b6b] text-white flex items-center justify-center font-bold text-sm ring-4 ring-[#faf9f5] shadow-sm z-10 font-[var(--font-headline)]">
+              <div className="absolute -left-6 -translate-x-1/2 top-6 w-8 h-8 rounded-full bg-[#ff6b6b] text-white flex items-center justify-center font-bold text-sm ring-4 ring-[#faf9f5] shadow-sm z-10 font-[var(--font-headline)]">
                 {step.stepNumber}
               </div>
 
@@ -330,7 +330,7 @@ export function Step2IngredientsInstructions({
                 </div>
 
                 {/* Step Image Upload (Cloudinary) */}
-                <div className="w-full md:w-44 flex-shrink-0">
+                <div className="w-full md:w-48 flex-shrink-0">
                   <ImageUploader
                     value={step.imageUrl}
                     onChange={(url) =>
@@ -346,7 +346,7 @@ export function Step2IngredientsInstructions({
         </div>
 
         {/* Add Next Step Button */}
-        <div className="mt-8 pl-8">
+        <div className="mt-8 pl-12">
           <button
             type="button"
             onClick={handleAddStep}

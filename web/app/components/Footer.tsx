@@ -1,11 +1,15 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="w-full rounded-t-[32px] bg-[#e9e8e4] mt-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center max-w-[1200px] mx-auto px-12 py-16 gap-10">
         <div className="flex flex-col gap-3">
-          <span className="text-2xl font-black text-[#ae2f34] font-[var(--font-headline)]">
-            GourmetPop
-          </span>
+          <Link href="/" className="inline-block">
+            <span className="text-2xl font-black text-[#ae2f34] font-[var(--font-headline)] hover:opacity-90 transition-opacity">
+              GourmetPop
+            </span>
+          </Link>
           <p className="text-sm text-[#584140]">
             © 2024 GourmetPop. Nơi lan tỏa niềm đam mê ẩm thực.
           </p>

@@ -64,7 +64,7 @@ export function Step3PreviewPublish({
       {/* ── Preview Canvas ─────────────────────────────────────── */}
       <div className="bg-white rounded-[28px] shadow-[0_10px_30px_rgba(255,107,107,0.06)] border border-[#e3e2df] p-6 md:p-10 relative overflow-hidden">
         {/* Hero Image & Category Tags */}
-        <div className="w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-8 relative group border border-[#efeeea] bg-[#faf9f5]">
+        <div className="w-full h-72 md:h-[420px] rounded-2xl overflow-hidden mb-8 relative group border border-[#efeeea] bg-[#faf9f5]">
           {formData.imageUrl ? (
             <img
               src={formData.imageUrl}
@@ -166,7 +166,7 @@ export function Step3PreviewPublish({
                         {step.instruction || "Chưa có nội dung hướng dẫn cho bước này."}
                       </p>
                       {step.imageUrl && (
-                        <div className="mt-3 rounded-xl overflow-hidden max-h-52 max-w-sm border border-[#efeeea]">
+                        <div className="mt-3 rounded-xl overflow-hidden max-h-64 max-w-md border border-[#efeeea]">
                           <img
                             src={step.imageUrl}
                             alt={step.title || `Bước ${step.stepNumber}`}
@@ -194,10 +194,12 @@ export function Step3PreviewPublish({
                   .map((ing) => (
                     <li
                       key={ing.id}
-                      className="flex justify-between items-center border-b border-[#e3e2df]/60 pb-2 text-sm"
+                      className="flex justify-between items-start gap-4 border-b border-[#e3e2df]/60 pb-2 text-sm"
                     >
-                      <span className="text-[#1b1c1a] font-medium">{ing.name}</span>
-                      <span className="font-[var(--font-headline)] font-bold text-[#584140]">
+                      <span className="text-[#1b1c1a] font-medium leading-snug flex-1 min-w-0">
+                        {ing.name}
+                      </span>
+                      <span className="font-[var(--font-headline)] font-bold text-[#584140] shrink-0 text-right whitespace-nowrap">
                         {ing.amount} {ing.unit}
                       </span>
                     </li>

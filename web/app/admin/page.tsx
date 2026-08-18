@@ -12,6 +12,7 @@ import DeleteRecipeModal from "./components/DeleteRecipeModal";
 import AdminRecipeRow from "./components/AdminRecipeRow";
 import AdminEmptyState from "./components/AdminEmptyState";
 import InfiniteScrollSentinel from "../components/InfiniteScrollSentinel";
+import Tabs from "@/app/components/Tabs";
 
 const ADMIN_STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
   { label: "Tất cả", value: "all" },
@@ -355,22 +356,14 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Status Filter Tabs */}
-            <div className="flex items-center gap-1 bg-[#efeeea] p-1 rounded-xl">
-              {ADMIN_STATUS_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setActiveStatus(tab.value)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    activeStatus === tab.value
-                      ? "bg-white text-[#ae2f34] shadow-sm font-bold"
-                      : "text-[#584140] hover:text-[#1b1c1a]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <Tabs<RecipeStatus>
+              tabs={ADMIN_STATUS_TABS}
+              activeTab={activeStatus}
+              onChange={setActiveStatus}
+              variant="white"
+              size="sm"
+              ariaLabel="Lọc trạng thái công thức"
+            />
           </div>
 
           <div className="flex items-center gap-4 w-full md:w-auto">
