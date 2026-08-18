@@ -115,12 +115,12 @@ const createRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
         /*sql*/
         const recipeSql = `
-        INSERT INTO recipes (title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO recipes (title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings, author_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
     `;
-        const { title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings } = recipe;
-        const result = await client.query(recipeSql, [title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings]);
+        const { title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings, author_id } = recipe;
+        const result = await client.query(recipeSql, [title, slug, description, image_url, prep_time_minutes, cook_time_minutes, servings, author_id]);
         const recipeId = result.rows[0].id;
 
         if (recipe.ingredients && recipe.ingredients.length > 0) {

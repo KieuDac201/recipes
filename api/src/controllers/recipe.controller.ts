@@ -70,7 +70,8 @@ const getRecipe = async (req: Request, res: Response, next: NextFunction) => {
 
 const createRecipe = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const recipe = await RecipeService.postRecipe(req.body);
+        const { id: authorId } = req.user as { id: number };
+        const recipe = await RecipeService.postRecipe({ ...req.body, author_id: authorId });
         return sendSuccess(res, recipe, 201)
     } catch (error) {
         next(error)
