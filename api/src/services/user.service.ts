@@ -4,6 +4,7 @@ import { comparePassword, hashPassword } from "../utils";
 import { AppError } from "../utils/AppError";
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
+import sendMail from "./email.service";
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -64,7 +65,7 @@ const forgotPassword = async (email?: string) => {
     // hash otp
     const hashedOtp = crypto.createHash('sha256').update(rawOtp).digest('hex')
     // send mail
-
+    await sendMail(email, 'Reset Password', `Your reset OTP is: ${rawOtp}`);
     // save to database (otp, expired = 1p, reset_otp_attempts = 0 )
     await userRepository.saveOtp(email, hashedOtp, new Date(Date.now() + 10 * 60 * 1000))
 
@@ -80,8 +81,8 @@ const resetPassword = async (email: string, otp: string, password: string) => {
     if (!existUser) {
         throw new AppError('Email not found', 404)
     }
-    // check reset_otp_attempts > 5 
-    if (existUser.reset_otp_attempts > 5) {
+    // check reset_otp_attempts >= 5 
+    if (existUser.reset_otp_attempts >= 5) {
         const oneDay = 24 * 60 * 60 * 1000;
 
         await userRepository.lockResetOtp(email, new Date(Date.now() + oneDay))
