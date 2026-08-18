@@ -7,11 +7,11 @@ export default function Footer() {
         <div className="flex flex-col gap-3">
           <Link href="/" className="inline-block">
             <span className="text-2xl font-black text-[#ae2f34] font-[var(--font-headline)] hover:opacity-90 transition-opacity">
-              GourmetPop
+              Bếp Phương
             </span>
           </Link>
           <p className="text-sm text-[#584140]">
-            © 2024 GourmetPop. Nơi lan tỏa niềm đam mê ẩm thực.
+            © 2024 Bếp Phương. Nơi lan tỏa niềm đam mê ẩm thực.
           </p>
         </div>
         <nav className="flex flex-wrap gap-6 text-xs font-bold text-[#584140]">

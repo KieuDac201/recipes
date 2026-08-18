@@ -22,7 +22,7 @@ export default function AdminEmptyState({
       <p className="text-sm text-[#584140] max-w-md mb-6">
         {searchQuery
           ? `Không có kết quả nào khớp với từ khóa "${searchQuery}". Hãy thử tìm kiếm từ khóa khác.`
-          : "Bắt đầu thêm công thức món ăn mới để quản lý và chia sẻ trên hệ thống Bếp Nhà Phương."}
+          : "Bắt đầu thêm công thức món ăn mới để quản lý và chia sẻ trên hệ thống Bếp Phương."}
       </p>
       {searchQuery ? (
         <button

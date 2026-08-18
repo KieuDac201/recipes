@@ -17,8 +17,8 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "GourmetPop — Công Thức Món Ăn Hấp Dẫn",
-  description: "Khám phá, nấu nướng và chia sẻ những công thức món ăn đặc sắc cùng GourmetPop.",
+  title: "Bếp Phương — Công Thức Món Ăn Hấp Dẫn",
+  description: "Khám phá, nấu nướng và chia sẻ những công thức món ăn đặc sắc cùng Bếp Phương.",
 };
 
 export default function RootLayout({

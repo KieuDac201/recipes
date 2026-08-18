@@ -31,7 +31,7 @@ export default function AdminSidebar() {
       {/* ── Mobile Top Bar ────────────────────────────────────────── */}
       <div className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#f4f4f0] border-b border-[#e3e2df] sticky top-0 z-40">
         <Link href="/" className="font-extrabold text-2xl text-[#ae2f34] font-[var(--font-headline)]">
-          GourmetPop
+          Bếp Phương
         </Link>
         <div className="flex items-center gap-3">
           <button
@@ -105,7 +105,7 @@ export default function AdminSidebar() {
         <div className="mb-8">
           <Link href="/">
             <h1 className="font-[var(--font-headline)] text-2xl font-extrabold text-[#ae2f34] tracking-tight hover:opacity-90 transition-opacity">
-              GourmetPop
+              Bếp Phương
             </h1>
           </Link>
           <p className="font-[var(--font-headline)] text-xs font-bold text-[#584140] mt-1 tracking-wide uppercase">

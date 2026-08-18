@@ -69,7 +69,7 @@ function LoginFormContent() {
       <div className="text-center mb-8">
         <Link href="/" className="inline-block group mb-1">
           <h1 className="font-[var(--font-headline)] text-4xl sm:text-5xl font-extrabold text-[#ae2f34] tracking-tight group-hover:scale-105 transition-transform duration-200">
-            GourmetPop
+            Bếp Phương
           </h1>
         </Link>
         <p className="text-base sm:text-lg text-[#584140] mt-1 font-medium">

@@ -3,7 +3,7 @@ import AdminSidebar from "./components/AdminSidebar";
 import AdminGuard from "./components/AdminGuard";
 
 export const metadata: Metadata = {
-  title: "GourmetPop — Quản Trị Hệ Thống",
+  title: "Bếp Phương — Quản Trị Hệ Thống",
   description: "Bảng điều khiển quản lý ẩm thực và tạo công thức món ăn.",
 };
 

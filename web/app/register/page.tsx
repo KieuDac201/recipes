@@ -87,7 +87,7 @@ export default function RegisterPage() {
               Khơi nguồn cảm hứng ẩm thực
             </p>
             <p className="text-xs text-white/90 font-light">
-              Hàng ngàn công thức độc quyền từ cộng đồng đầu bếp GourmetPop
+              Hàng ngàn công thức độc quyền từ cộng đồng đầu bếp Bếp Phương
             </p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function RegisterPage() {
           <div className="mb-6 text-center md:text-left">
             <Link href="/" className="inline-block group mb-1">
               <h1 className="font-[var(--font-headline)] text-3xl sm:text-4xl font-extrabold text-[#ae2f34] tracking-tight group-hover:scale-105 transition-transform duration-200">
-                GourmetPop
+                Bếp Phương
               </h1>
             </Link>
             <p className="text-sm sm:text-base text-[#584140] font-medium">

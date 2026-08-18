@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const recipe = await getRecipeByIdOrSlug(slug);
   if (!recipe) return { title: "Không Tìm Thấy Công Thức" };
   return {
-    title: `${recipe.title} — GourmetPop`,
+    title: `${recipe.title} — Bếp Phương`,
     description: recipe.description || undefined,
   };
 }

@@ -144,7 +144,7 @@ function ResetPasswordForm() {
       <div className="text-center mb-7">
         <Link href="/" className="inline-block group mb-1">
           <span className="font-[var(--font-headline)] text-2xl font-extrabold text-[#ae2f34] tracking-tight group-hover:scale-105 transition-transform duration-200">
-            GourmetPop
+            Bếp Phương
           </span>
         </Link>
         <h1 className="font-[var(--font-headline)] text-2xl sm:text-3xl font-bold text-[#1b1c1a] mb-2 tracking-tight">
