@@ -188,3 +188,4 @@ When creating a new endpoint (e.g. for `recipes`, `categories`, `ingredients`):
 - `npm run dev`: Starts Next.js development server.
 - `npm run build`: Builds the Next.js production bundle.
 - `npm start`: Runs the Next.js production server.
+
