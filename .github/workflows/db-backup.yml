@@ -2,8 +2,8 @@ name: Daily Neon Postgres Backup
 
 on:
   schedule:
-    # Runs daily at 00:00 UTC
-    - cron: '0 0 * * *'
+    # Runs daily at 00:00 UTC and 12:00 UTC
+    - cron: '0 0,12 * * *'
   workflow_dispatch: # Allows manual trigger
 
 jobs:
@@ -37,14 +37,3 @@ jobs:
           name: ${{ env.FILENAME }}
           path: ${{ env.FILENAME }}
           retention-days: 30
-
-      - name: Create GitHub Release (Permanent Storage)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG_NAME }}
-          name: "Database Backup - ${{ env.TAG_NAME }}"
-          files: ${{ env.FILENAME }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
