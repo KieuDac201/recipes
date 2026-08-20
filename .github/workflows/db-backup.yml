@@ -13,31 +13,24 @@ jobs:
       contents: write # Needed to create GitHub Releases
 
     steps:
-      - name: Install Latest PostgreSQL Client
-        run: |
-          sudo apt-get install -y curl ca-certificates lsb-release
-          sudo install -d /etc/apt/keyrings
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update
-          # Install the latest PostgreSQL client packages
-          sudo apt-get install -y postgresql-client
-
-      - name: Create Compressed Database Dump
+      - name: Create Compressed Database Dump with Docker
         run: |
           set -e
-          set -o pipefail
 
+          # Tạo tên file theo timestamp (giờ UTC)
           BACKUP_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
           FILENAME="backup_${BACKUP_DATE}.sql.gz"
           TAG_NAME="db-backup-${BACKUP_DATE}"
 
+          # Lưu biến vào môi trường GitHub Actions
           echo "FILENAME=${FILENAME}" >> $GITHUB_ENV
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
 
-          pg_dump "${{ secrets.DATABASE_URL }}" --no-owner --no-acl | gzip > "${FILENAME}"
+          # Chạy pg_dump 18 qua Docker container chính thức và nén trực tiếp bằng gzip
+          docker run --rm postgres:18-alpine \
+            pg_dump "${{ secrets.DATABASE_URL }}" --no-owner --no-acl | gzip > "${FILENAME}"
 
-      - name: Save Backup as GitHub Action Artifact (Kept for 30 Days)
+      - name: Save Backup as GitHub Action Artifact (30 Days)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FILENAME }}
