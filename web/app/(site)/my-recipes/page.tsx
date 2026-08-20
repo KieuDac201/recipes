@@ -260,6 +260,10 @@ export default function MyRecipesPage() {
                         <span className="material-symbols-outlined text-[16px]">group</span>
                         {recipe.servings} người
                       </span>
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        {(recipe.view_count || 0).toLocaleString()}
+                      </span>
                     </div>
 
                     <Link

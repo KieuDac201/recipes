@@ -5,6 +5,7 @@ import ServingScaler from "@/app/components/ServingScaler";
 import RecipeActions from "@/app/components/RecipeActions";
 import CategoryBadge from "@/app/components/CategoryBadge";
 import RecipeMetaStats from "@/app/components/RecipeMetaStats";
+import ViewTracker from "@/app/components/ViewTracker";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -33,6 +34,9 @@ export default async function RecipePage({ params }: PageProps) {
 
   return (
     <main className="flex-grow w-full max-w-[1200px] mx-auto px-4 md:px-12 py-16">
+      {/* ── View Tracker ─────────────────────────────────────── */}
+      <ViewTracker recipeId={recipe.id} />
+
       {/* ── Hero Section ─────────────────────────────────────── */}
       <section className="mb-10">
         {/* Back link */}
@@ -61,11 +65,12 @@ export default async function RecipePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Time/serving stats */}
+            {/* Time/serving/view stats */}
             <RecipeMetaStats
               prepTimeMinutes={recipe.prep_time_minutes}
               cookTimeMinutes={recipe.cook_time_minutes}
               servings={recipe.servings}
+              viewCount={recipe.view_count}
             />
           </div>
 

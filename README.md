@@ -232,6 +232,7 @@ Once the backend is running, you can access the interactive Swagger UI documenta
 - `PUT /api/recipes/:id` — Update recipe (author / admin)
 - `DELETE /api/recipes/:id` — Delete recipe
 - `PATCH /api/recipes/:id/status` — Approve/Reject recipe (admin only)
+- `PATCH /api/recipes/:id/view-count` — Increment recipe view count
 - `POST /api/upload` — Upload image to Cloudinary
 
 ---

@@ -66,6 +66,10 @@ export default function AdminRecipeRow({
               <span className="material-symbols-outlined text-[14px]">group</span>
               {recipe.servings} phần
             </span>
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">visibility</span>
+              {(recipe.view_count || 0).toLocaleString()}
+            </span>
             <span className="font-mono text-[11px] text-[#8c706f]/80 truncate max-w-[140px]">
               /{recipe.slug}
             </span>

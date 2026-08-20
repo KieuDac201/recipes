@@ -77,6 +77,10 @@ const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_re
     await RecipeRepository.updateRecipeStatus(id, status, rejection_reason)
 }
 
+const increaseViewCount = async (id: number) => {
+    await RecipeRepository.increaseRecipeViewCount(id)
+}
+
 const RecipeService = {
     getMyRecipes,
     getPublicRecipes,
@@ -85,7 +89,8 @@ const RecipeService = {
     postRecipe,
     updateRecipe,
     removeRecipe,
-    updateRecipeStatus
+    updateRecipeStatus,
+    increaseViewCount
 }
 
 export default RecipeService

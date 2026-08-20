@@ -43,6 +43,7 @@ export const RecipeSchema = registry.register(
         cook_time_minutes: z.number().int().openapi({ example: 20 }),
         servings: z.number().int().openapi({ example: 4 }),
         author_id: z.number().int().nullable().optional().openapi({ example: 1 }),
+        view_count: z.number().int().optional().openapi({ example: 42 }),
         status: z.enum(["pending", "approved", "rejected"]).optional().openapi({ example: "approved" }),
         rejection_reason: z.string().nullable().optional().openapi({ example: null }),
         created_at: z.union([z.string(), z.date()]).openapi({ example: "2026-08-10T08:30:00.000Z" }),
@@ -130,6 +131,16 @@ export const UpdateRecipeStatusResponseSchema = registry.register(
         success: z.boolean().openapi({ example: true }),
         data: z.object({
             message: z.string().openapi({ example: "Update status successfully" }),
+        }),
+    })
+);
+
+export const IncreaseRecipeViewCountResponseSchema = registry.register(
+    "IncreaseRecipeViewCountResponse",
+    z.object({
+        success: z.boolean().openapi({ example: true }),
+        data: z.object({
+            message: z.string().openapi({ example: "Increase view count successfully" }),
         }),
     })
 );
@@ -366,6 +377,23 @@ registry.registerPath({
         400: errors.badRequest,
         401: errors.unauthorized,
         403: errors.forbidden,
+        404: errors.notFound,
+    },
+});
+
+// 9. Increase Recipe View Count
+registry.registerPath({
+    method: "patch",
+    path: "/recipes/{id}/view-count",
+    tags: ["Recipes"],
+    summary: "Increase recipe view count",
+    description: "Increments the view count of a recipe by 1. Public endpoint.",
+    request: {
+        params: recipeIdParamSchema,
+    },
+    responses: {
+        200: jsonResponse(IncreaseRecipeViewCountResponseSchema, "Recipe view count increased successfully"),
+        400: errors.badRequest,
         404: errors.notFound,
     },
 });

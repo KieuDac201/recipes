@@ -62,6 +62,7 @@ export interface Recipe extends BaseEntity, TimestampedEntity {
   prep_time_minutes: number;
   cook_time_minutes: number;
   servings: number;
+  view_count?: number;
   author_id?: number | null;
   status?: RecipeStatus;
   rejection_reason?: string | null;

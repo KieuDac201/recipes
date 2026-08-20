@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     prep_time_minutes INT NOT NULL,
     cook_time_minutes INT NOT NULL,
     servings INT NOT NULL,
+    view_count INT NOT NULL DEFAULT 0,
     author_id INT REFERENCES users(id) ON DELETE SET NULL,
     status recipe_status DEFAULT 'pending',
     rejection_reason TEXT DEFAULT NULL,
@@ -64,3 +65,5 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 
 CREATE INDEX IF NOT EXISTS idx_recipes_unaccent_title 
 ON recipes (unaccent(LOWER(title)) varchar_pattern_ops);
+
+CREATE INDEX idx_recipes_view_count ON recipes (view_count DESC);

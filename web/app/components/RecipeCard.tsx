@@ -37,14 +37,25 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         <p className="text-sm text-[#584140] line-clamp-2 mb-3 flex-grow leading-relaxed">
           {recipe.description || "Công thức món ăn thơm ngon, hấp dẫn."}
         </p>
-        <div className="flex items-center gap-1 text-xs font-bold text-[#584140] mt-auto pt-3 border-t border-[#e3e2df]/60">
-          <span
-            className="material-symbols-outlined text-[15px]"
-            style={{ fontVariationSettings: "'FILL' 0" }}
-          >
-            schedule
-          </span>
-          {totalTime > 0 ? `${totalTime} phút` : "Nhanh gọn"}
+        <div className="flex items-center justify-between text-xs font-bold text-[#584140] mt-auto pt-3 border-t border-[#e3e2df]/60">
+          <div className="flex items-center gap-1">
+            <span
+              className="material-symbols-outlined text-[15px]"
+              style={{ fontVariationSettings: "'FILL' 0" }}
+            >
+              schedule
+            </span>
+            {totalTime > 0 ? `${totalTime} phút` : "Nhanh gọn"}
+          </div>
+          <div className="flex items-center gap-1">
+            <span
+              className="material-symbols-outlined text-[15px]"
+              style={{ fontVariationSettings: "'FILL' 0" }}
+            >
+              visibility
+            </span>
+            <span>{(recipe.view_count || 0).toLocaleString()} lượt xem</span>
+          </div>
         </div>
       </div>
     </Link>

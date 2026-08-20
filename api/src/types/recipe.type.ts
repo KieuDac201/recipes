@@ -9,6 +9,7 @@ interface Recipe {
     prep_time_minutes: number;
     cook_time_minutes: number;
     servings: number;
+    view_count?: number;
     author_id: number;
     created_at: Date | string;
 }

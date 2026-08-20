@@ -109,6 +109,16 @@ export const recipeService = {
   },
 
   /**
+   * Increment recipe view count by ID
+   */
+  increaseViewCount: async (id: string | number): Promise<{ message: string }> => {
+    const response = await apiClient.patch<{ success: boolean; data: { message: string } }>(
+      `/recipes/${encodeURIComponent(id)}/view-count`
+    );
+    return response.data;
+  },
+
+  /**
    * Update recipe moderation status (Approve / Reject)
    */
   updateStatus: async (
@@ -134,6 +144,7 @@ export const createRecipe = recipeService.create;
 export const updateRecipe = recipeService.update;
 export const deleteRecipe = recipeService.delete;
 export const updateRecipeStatus = recipeService.updateStatus;
+export const increaseRecipeViewCount = recipeService.increaseViewCount;
 
 export default recipeService;
 

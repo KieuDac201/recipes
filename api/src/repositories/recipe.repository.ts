@@ -23,7 +23,7 @@ const findAllRecipes = async (limit: number, offset: number, search?: string, st
     const dataSQL = `
         SELECT * FROM recipes 
         ${whereClause}
-        ORDER BY id
+        ORDER BY created_at DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     /*sql*/
@@ -259,6 +259,16 @@ const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_re
 
 }
 
+const increaseRecipeViewCount = async (id: number) => {
+    /*sql*/
+    const updateSql = `
+        UPDATE recipes
+        SET view_count = view_count + 1
+        WHERE id = $1
+    `
+    await query(updateSql, [id])
+}
+
 export {
     findAllRecipes,
     findRecipeById,
@@ -266,5 +276,6 @@ export {
     isImageUsedInRecipe,
     deleteRecipe,
     updateRecipe,
-    updateRecipeStatus
+    updateRecipeStatus,
+    increaseRecipeViewCount
 }

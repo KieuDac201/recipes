@@ -20,5 +20,6 @@ router.post('/', verifyToken, validateBody(createRecipePayloadSchema), RecipeCon
 router.put("/:id", verifyToken, authAdmin, validateBody(updateRecipePayloadSchema), RecipeController.updateRecipe);
 router.delete('/:id', verifyToken, authAdmin, RecipeController.deleteRecipe);
 router.patch('/:id/status', verifyToken, authAdmin, validateBody(updateRecipeStatusSchema), RecipeController.updateRecipeStatus)
+router.patch('/:id/view-count', RecipeController.increaseViewCount)
 
 export default router;

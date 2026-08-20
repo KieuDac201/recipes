@@ -110,6 +110,16 @@ const updateRecipeStatus = async (req: Request, res: Response, next: NextFunctio
     }
 }
 
+const increaseViewCount = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params as { id: string };
+        await RecipeService.increaseViewCount(Number(id));
+        return sendSuccess(res, { message: 'Increase view count successfully' }, 200)
+    } catch (error) {
+        next(error)
+    }
+}
+
 const RecipeController = {
     getAdminRecipes,
     getPublicRecipes,
@@ -118,7 +128,8 @@ const RecipeController = {
     createRecipe,
     deleteRecipe,
     updateRecipe,
-    updateRecipeStatus
+    updateRecipeStatus,
+    increaseViewCount
 }
 
 export default RecipeController
