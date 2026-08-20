@@ -1,4 +1,4 @@
-name: Daily Neon Postgres Backup (No Card Required)
+name: Daily Neon Postgres Backup
 
 on:
   schedule:
