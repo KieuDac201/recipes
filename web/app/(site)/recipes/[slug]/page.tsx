@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getRecipeByIdOrSlug } from "@/src/services/recipeApi";
+import { getRecipeByIdOrSlug, getPublicRecipes } from "@/src/services/recipeApi";
 import ServingScaler from "@/app/components/ServingScaler";
 import RecipeActions from "@/app/components/RecipeActions";
 import CategoryBadge from "@/app/components/CategoryBadge";
@@ -12,8 +12,24 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const dynamic = "force-dynamic";
+// ISR: Cache pages and revalidate in background every 60 seconds
+export const revalidate = 60;
 export const dynamicParams = true;
+
+/**
+ * Pre-generate static HTML for public recipes at build time (SSG)
+ */
+export async function generateStaticParams() {
+  try {
+    const res = await getPublicRecipes({ limit: 100, current_page: 1 });
+    return (res.data || []).map((recipe) => ({
+      slug: recipe.slug || String(recipe.id),
+    }));
+  } catch (error) {
+    console.error("[generateStaticParams] Failed to fetch recipes for pre-rendering:", error);
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
