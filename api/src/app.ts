@@ -29,6 +29,9 @@ app.use(express.json());
 
 // CORS middleware
 
+app.get("/wake-up", (req, res) => {
+    res.json({ message: "I'm alive" });
+});
 
 // Main API routes
 app.use("/api", router);

@@ -264,9 +264,15 @@ Once the backend is running, you can access the interactive Swagger UI documenta
 ## ⚙️ Automation & CI/CD
 
 - **Automated Database Backups**:
-  - Located in [`.github/workflows/db-backup.yml`](file:///Users/kiennt2/recipes/.github/workflows/db-backup.yml).
+  - Located in [`.github/workflows/db-backup.yml`](file:///d:/recipes/.github/workflows/db-backup.yml).
   - Triggers every day at `00:00 UTC` and supports manual triggers (`workflow_dispatch`).
   - Dumps PostgreSQL using `pg_dump`, compresses with `gzip`, uploads an artifact (retained 30 days), and publishes a permanent release under GitHub Releases.
+
+- **API Keep-Alive / Wake-Up Cron**:
+  - Located in [`.github/workflows/wake-up.yml`](file:///d:/recipes/.github/workflows/wake-up.yml).
+  - Triggers every 10 minutes between `8:00 AM` and `10:00 PM` (UTC+7 / `01:00 - 15:00 UTC`) via cron `*/10 1-15 * * *`.
+  - Sends an HTTP GET request to `/wake-up` to prevent free cloud instances from sleeping during active hours.
+  - Configurable via GitHub Repository Secret / Variable (`API_URL` or `BACKEND_URL`).
 
 ---
 
