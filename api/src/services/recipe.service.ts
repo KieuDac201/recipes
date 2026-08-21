@@ -1,7 +1,6 @@
 import * as RecipeRepository from "../repositories/recipe.repository"
 import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type"
 import { AppError } from "../utils/AppError"
-import { confirmImages, extractPublicIdFromUrl } from "./upload.service"
 
 const getMyRecipes = async (
   limit: number,
@@ -44,43 +43,15 @@ const getRecipeById = async (id: string): Promise<RecipeDetail> => {
   return recipe
 }
 
-const removeTempTagImages = async (recipe: RecipeBody) => {
-  const publicIdsToConfirm: string[] = []
-  if (recipe.image_url) {
-    const mainImageId = extractPublicIdFromUrl(recipe.image_url)
-    if (mainImageId) publicIdsToConfirm.push(mainImageId)
-  }
-  if (recipe.instructions && recipe.instructions.length > 0) {
-    for (const step of recipe.instructions) {
-      if (step.image_url) {
-        const stepImageId = extractPublicIdFromUrl(step.image_url)
-        if (stepImageId) publicIdsToConfirm.push(stepImageId)
-      }
-    }
-  }
-  // 3. Gỡ tag "temporary" để xác nhận ảnh chính thức
-  if (publicIdsToConfirm.length > 0) {
-    await confirmImages(publicIdsToConfirm)
-  }
-}
-
 const postRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
-  const createdRecipe = await RecipeRepository.createRecipe(recipe)
-
-  await removeTempTagImages(recipe)
-
-  return createdRecipe
+  return await RecipeRepository.createRecipe(recipe)
 }
 
 const updateRecipe = async (
   id: string,
   recipe: RecipeBody
 ): Promise<Omit<Recipe, "created_at">> => {
-  const updatedRecipe = await RecipeRepository.updateRecipe(id, recipe)
-
-  await removeTempTagImages(recipe)
-
-  return updatedRecipe
+  return await RecipeRepository.updateRecipe(id, recipe)
 }
 
 const removeRecipe = async (id: string): Promise<Recipe> => {

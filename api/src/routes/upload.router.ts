@@ -2,13 +2,14 @@ import { Router } from "express"
 import { cleanUpImages, uploadImage } from "../controllers/upload.controller"
 import { uploadSingleImage } from "../middlewares/upload.middleware"
 import "../schemas/upload.schema"
-import { verifyToken } from "../middlewares/auth"
+import { verifyToken, verifyCronSecret } from "../middlewares/auth"
 
 const router = Router()
 
-router.use(verifyToken)
+// Upload ảnh: Cần xác thực người dùng đăng nhập (JWT token)
+router.post("/", verifyToken, uploadSingleImage, uploadImage)
 
-router.post("/", uploadSingleImage, uploadImage)
-router.post("/cleanup", cleanUpImages)
+// Dọn dẹp ảnh mồ côi: Cần secret key (CRON_SECRET) cho GitHub Actions / Cron runners
+router.post("/cleanup", verifyCronSecret, cleanUpImages)
 
 export default router

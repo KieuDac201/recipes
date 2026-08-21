@@ -39,4 +39,25 @@ const authAdmin = (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
-export { verifyToken, authAdmin }
+const verifyCronSecret = (req: Request, res: Response, next: NextFunction) => {
+  const cronSecret = process.env.CRON_SECRET
+  const providedSecret =
+    (req.headers["x-cron-secret"] as string) ||
+    (req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : undefined)
+
+  if (!cronSecret) {
+    return next(
+      new AppError("Server configuration error: CRON_SECRET is not configured", 500)
+    )
+  }
+
+  if (!providedSecret || providedSecret !== cronSecret) {
+    return next(new AppError("Unauthorized: Invalid or missing cron secret", 401))
+  }
+
+  next()
+}
+
+export { verifyToken, authAdmin, verifyCronSecret }

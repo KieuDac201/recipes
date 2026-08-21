@@ -249,6 +249,17 @@ const deleteRecipe = async (id: string): Promise<Recipe> => {
   return result.rows[0]
 }
 
+// Lấy toàn bộ image_url đang có trong database (recipes và instructions)
+const getAllUsedImageUrls = async (): Promise<string[]> => {
+  const sql = `
+        SELECT image_url FROM recipes WHERE image_url IS NOT NULL AND image_url != ''
+        UNION
+        SELECT image_url FROM instructions WHERE image_url IS NOT NULL AND image_url != '';
+    `
+  const res = await query(sql)
+  return res.rows.map((row: { image_url: string }) => row.image_url)
+}
+
 // Kiểm tra xem publicId/URL ảnh có đang được lưu trong recipes hoặc instructions không
 const isImageUsedInRecipe = async (publicId: string): Promise<boolean> => {
   const sql = `
@@ -285,6 +296,7 @@ export {
   findAllRecipes,
   findRecipeById,
   createRecipe,
+  getAllUsedImageUrls,
   isImageUsedInRecipe,
   deleteRecipe,
   updateRecipe,

@@ -1,5 +1,5 @@
 import cloudinary from "../config/cloudinary"
-import { isImageUsedInRecipe } from "../repositories/recipe.repository"
+import { getAllUsedImageUrls } from "../repositories/recipe.repository"
 import { AppError } from "../utils/AppError"
 
 interface UploadResponse {
@@ -16,7 +16,6 @@ export const uploadImageToCloudinary = (
       {
         folder,
         resource_type: "image",
-        tags: ["temporary"],
         transformation: [
           {
             width: 1200,
@@ -46,16 +45,6 @@ export const uploadImageToCloudinary = (
   })
 }
 
-export const confirmImages = async (publicIds: string[]): Promise<void> => {
-  if (!publicIds || publicIds.length === 0) return
-
-  try {
-    await cloudinary.uploader.remove_tag("temporary", publicIds)
-  } catch (error) {
-    console.error("Failed to remove temporary tag from images:", error)
-  }
-}
-
 export const extractPublicIdFromUrl = (url: string): string | null => {
   try {
     const parts = url.split("/upload/")
@@ -69,50 +58,60 @@ export const extractPublicIdFromUrl = (url: string): string | null => {
   }
 }
 
-// 4. Quét và xóa các ảnh "temporary" quá 24h
+// Quét và xóa các ảnh trên Cloudinary nếu không còn tồn tại trong Database (> 24h)
 export const cleanOrphanedImages = async (): Promise<void> => {
   try {
-    console.log("[Cron Job] Checking for orphaned temporary images...")
+    console.log("[Cron Job] Checking for orphaned images on Cloudinary...")
 
-    // Quét các ảnh có tag temporary quá 24h
-    const searchResult = await cloudinary.search
-      .expression("tags:temporary AND created_at < 1d")
-      .max_results(100)
-      .execute()
-    if (!searchResult.resources || searchResult.resources.length === 0) {
-      console.log("[Cron Job] No orphaned images found.")
-      return
-    }
-    const toDeleteIds: string[] = []
-    const toHealIds: string[] = []
-    // Kiểm tra từng ảnh với Database
-    for (const resource of searchResult.resources) {
-      const publicId = resource.public_id
-      const isUsed = await isImageUsedInRecipe(publicId)
-      if (isUsed) {
-        // ⚠️ Ảnh đang có trong Recipe DB nhưng bị sót tag do lỗi mạng trước đó
-        toHealIds.push(publicId)
-      } else {
-        //  Ảnh không hề có trong DB -> Xóa
-        toDeleteIds.push(publicId)
+    // 1. Lấy toàn bộ image_url trong Database trong 1 câu truy vấn duy nhất
+    const allDbUrls = await getAllUsedImageUrls()
+    const usedPublicIds = new Set<string>()
+
+    for (const url of allDbUrls) {
+      const publicId = extractPublicIdFromUrl(url)
+      if (publicId) {
+        usedPublicIds.add(publicId)
       }
     }
-    // Tự động sửa lỗi: gỡ tag temporary cho các ảnh đang được dùng
-    if (toHealIds.length > 0) {
-      await cloudinary.uploader.remove_tag("temporary", toHealIds)
-      console.log(
-        `[Cron Job] Healed & kept ${toHealIds.length} images that exist in Database:`,
-        toHealIds
-      )
-    }
-    // Xóa các ảnh mồ côi thực sự
-    if (toDeleteIds.length > 0) {
-      await cloudinary.api.delete_resources(toDeleteIds)
-      console.log(
-        `[Cron Job] Successfully deleted ${toDeleteIds.length} truly orphaned images:`,
-        toDeleteIds
-      )
-    }
+
+    console.log(`[Cron Job] Found ${usedPublicIds.size} active images in Database.`)
+
+    // 2. Quét Cloudinary các ảnh trong folder 'recipes' đã tạo quá 24h (tránh xóa nhầm ảnh đang soạn thảo)
+    let nextCursor: string | undefined = undefined
+    let totalDeleted = 0
+
+    do {
+      const searchResult = await cloudinary.search
+        .expression("created_at < 1d AND folder:recipes*")
+        .max_results(100)
+        .next_cursor(nextCursor)
+        .execute()
+
+      if (!searchResult.resources || searchResult.resources.length === 0) {
+        break
+      }
+
+      const toDeleteIds: string[] = []
+
+      for (const resource of searchResult.resources) {
+        const publicId = resource.public_id
+        // Nếu ảnh trên Cloudinary KHÔNG nằm trong danh sách đang dùng ở Database -> Xóa
+        if (!usedPublicIds.has(publicId)) {
+          toDeleteIds.push(publicId)
+        }
+      }
+
+      // Xóa các ảnh mồ côi theo lô (batch tối đa 100 ảnh/request)
+      if (toDeleteIds.length > 0) {
+        await cloudinary.api.delete_resources(toDeleteIds)
+        totalDeleted += toDeleteIds.length
+        console.log(`[Cron Job] Successfully deleted ${toDeleteIds.length} orphaned images:`, toDeleteIds)
+      }
+
+      nextCursor = searchResult.next_cursor
+    } while (nextCursor)
+
+    console.log(`[Cron Job] Cleanup completed. Total deleted images: ${totalDeleted}`)
   } catch (error) {
     console.error("[Cron Job] Failed to clean orphaned images:", error)
   }
