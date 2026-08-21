@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { getCategories } from "@/src/services/categoryApi";
 import { Category, CreateRecipeFormData } from "@/src/types/recipe";
 
@@ -80,10 +81,13 @@ export function Step3PreviewPublish({
         {/* Hero Image & Category Tags */}
         <div className="w-full h-72 md:h-[420px] rounded-2xl overflow-hidden mb-8 relative group border border-[#efeeea] bg-[#faf9f5]">
           {formData.imageUrl ? (
-            <img
+            <Image
               src={formData.imageUrl}
               alt={formData.title || "Ảnh món ăn"}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 1024px) 100vw, 1024px"
+              unoptimized={formData.imageUrl.startsWith("blob:") || formData.imageUrl.startsWith("data:")}
+              className="object-cover"
             />
           ) : (
             <div className="w-full h-full bg-[#efeeea] flex flex-col items-center justify-center text-[#8c706f]">
@@ -180,11 +184,14 @@ export function Step3PreviewPublish({
                         {step.instruction || "Chưa có nội dung hướng dẫn cho bước này."}
                       </p>
                       {step.imageUrl && (
-                        <div className="mt-3 rounded-xl overflow-hidden max-h-64 max-w-md border border-[#efeeea]">
-                          <img
+                        <div className="relative mt-3 rounded-xl overflow-hidden h-64 max-w-md border border-[#efeeea]">
+                          <Image
                             src={step.imageUrl}
                             alt={step.title || `Bước ${step.stepNumber}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="448px"
+                            unoptimized={step.imageUrl.startsWith("blob:") || step.imageUrl.startsWith("data:")}
+                            className="object-cover"
                           />
                         </div>
                       )}

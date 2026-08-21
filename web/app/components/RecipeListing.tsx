@@ -4,30 +4,34 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getRecipes } from "@/src/services/recipeApi";
 import type { Recipe, PaginationMeta } from "@/src/types/recipe";
 import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import { PUBLIC_RECIPE_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from "@/src/config/constants";
 import RecipeCard from "./RecipeCard";
 import RecipeSkeletonCard from "./RecipeSkeletonCard";
 import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
 
-const PAGE_SIZE = 8;
+export interface RecipeListingProps {
+  initialRecipes?: Recipe[];
+  initialPagination?: PaginationMeta | null;
+}
 
-export default function RecipeListing() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+export default function RecipeListing({
+  initialRecipes = [],
+  initialPagination = null,
+}: RecipeListingProps) {
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(
+    initialPagination
+  );
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialRecipes.length === 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const isInitialMount = useRef(true);
+  const activeSearchRef = useRef("");
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Initial fetch and fetch when search changes
+  // Fetch initial page of recipes with optional search term
   const fetchInitialRecipes = useCallback(async (searchTerm: string) => {
     setIsLoading(true);
     setError(null);
@@ -35,23 +39,62 @@ export default function RecipeListing() {
       const res = await getRecipes({
         search: searchTerm || undefined,
         current_page: 1,
-        limit: PAGE_SIZE,
+        limit: PUBLIC_RECIPE_PAGE_SIZE,
       });
       setRecipes(res.data || []);
       setPagination(res.pagination || null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load recipes:", err);
       setError(
-        "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối.",
+        "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối."
       );
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Cleanup timer on unmount
   useEffect(() => {
-    fetchInitialRecipes(debouncedSearch);
-  }, [debouncedSearch, fetchInitialRecipes]);
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Initial fetch if server didn't provide initialRecipes
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (initialRecipes.length === 0) {
+        fetchInitialRecipes("");
+      }
+    }
+  }, [fetchInitialRecipes, initialRecipes.length]);
+
+  // Handle direct search input change with SEARCH_DEBOUNCE_MS debounce (no extra re-render state)
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearch(value);
+
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      activeSearchRef.current = value;
+      fetchInitialRecipes(value);
+    }, SEARCH_DEBOUNCE_MS);
+  };
+
+  const handleClearSearch = () => {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    setSearch("");
+    activeSearchRef.current = "";
+    fetchInitialRecipes("");
+  };
 
   // Load more handler
   const handleLoadMore = useCallback(async () => {
@@ -62,18 +105,18 @@ export default function RecipeListing() {
     setIsLoadingMore(true);
     try {
       const res = await getRecipes({
-        search: debouncedSearch || undefined,
+        search: activeSearchRef.current || undefined,
         current_page: nextPage,
-        limit: PAGE_SIZE,
+        limit: PUBLIC_RECIPE_PAGE_SIZE,
       });
       setRecipes((prev) => [...prev, ...(res.data || [])]);
       setPagination(res.pagination || null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load more recipes:", err);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [pagination, isLoadingMore, debouncedSearch]);
+  }, [pagination, isLoadingMore]);
 
   const hasMore = pagination
     ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
@@ -107,13 +150,13 @@ export default function RecipeListing() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
             placeholder="Tìm kiếm công thức món ăn..."
             className="w-full bg-white border-2 border-[#e5e3dc] rounded-full py-4 pl-14 pr-12 text-base md:text-lg text-[#1b1c1a] font-medium placeholder:text-[#8c706f]/70 shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_14px_36px_rgba(255,107,107,0.12)] hover:border-[#ff6b6b]/40 focus:border-[#ff6b6b] focus:ring-4 focus:ring-[#ff6b6b]/15 focus:shadow-[0_14px_40px_rgba(255,107,107,0.18)] focus:outline-none focus-visible:outline-none outline-none transition-all duration-300"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={handleClearSearch}
               className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8c706f] hover:text-[#ff6b6b] transition-colors cursor-pointer"
               title="Xóa tìm kiếm"
             >
@@ -130,7 +173,7 @@ export default function RecipeListing() {
         <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center max-w-lg mx-auto mb-10">
           <p className="font-semibold mb-3">{error}</p>
           <button
-            onClick={() => fetchInitialRecipes(debouncedSearch)}
+            onClick={() => fetchInitialRecipes(activeSearchRef.current)}
             className="bg-[#ff6b6b] text-white px-6 py-2 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
           >
             Thử Lại
@@ -141,7 +184,7 @@ export default function RecipeListing() {
       {/* Loading Skeleton on Initial Load */}
       {isLoading && (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+          {Array.from({ length: PUBLIC_RECIPE_PAGE_SIZE }).map((_, i) => (
             <RecipeSkeletonCard key={i} />
           ))}
         </section>
@@ -157,9 +200,9 @@ export default function RecipeListing() {
           <p className="text-[#584140] mt-1">
             Hãy thử tìm kiếm bằng từ khóa khác.
           </p>
-          {debouncedSearch && (
+          {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={handleClearSearch}
               className="mt-5 bg-[#ff6b6b] text-white px-6 py-2.5 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
             >
               Xóa Bộ Lọc
@@ -170,12 +213,14 @@ export default function RecipeListing() {
 
       {/* Recipe Grid */}
       {!isLoading && !error && recipes.length > 0 && (
-        <>
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <section aria-label="Danh sách công thức nấu ăn">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <li key={recipe.id} className="h-full flex flex-col">
+                <RecipeCard recipe={recipe} className="h-full" />
+              </li>
             ))}
-          </section>
+          </ul>
 
           {/* Sentinel element for infinite scrolling */}
           <InfiniteScrollSentinel
@@ -183,8 +228,9 @@ export default function RecipeListing() {
             isLoadingMore={isLoadingMore}
             loadingText="Đang tải thêm món ngon..."
           />
-        </>
+        </section>
       )}
     </>
   );
 }
+

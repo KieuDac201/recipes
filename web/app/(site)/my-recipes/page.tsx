@@ -6,6 +6,7 @@ import AuthGuard from "@/app/components/AuthGuard";
 import { getMyRecipes } from "@/src/services/recipeApi";
 import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
 import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import { MY_RECIPE_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from "@/src/config/constants";
 import RecipeCard from "@/app/components/RecipeCard";
 import RecipeSkeletonCard from "@/app/components/RecipeSkeletonCard";
 import InfiniteScrollSentinel from "@/app/components/InfiniteScrollSentinel";
@@ -32,7 +33,7 @@ export default function MyRecipesPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 350);
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -45,13 +46,17 @@ export default function MyRecipesPage() {
         status: activeTab,
         search: debouncedSearch || undefined,
         current_page: 1,
-        limit: 8,
+        limit: MY_RECIPE_PAGE_SIZE,
       });
       setRecipes(res.data || []);
       setPagination(res.pagination || null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[MyRecipesPage] Error loading recipes:", err);
-      setError(err?.message || "Không thể tải danh sách công thức của bạn.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải danh sách công thức của bạn."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +78,11 @@ export default function MyRecipesPage() {
         status: activeTab,
         search: debouncedSearch || undefined,
         current_page: nextPage,
-        limit: 8,
+        limit: MY_RECIPE_PAGE_SIZE,
       });
       setRecipes((prev) => [...prev, ...(res.data || [])]);
       setPagination(res.pagination || null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[MyRecipesPage] Error loading more recipes:", err);
     } finally {
       setIsLoadingMore(false);
@@ -186,9 +191,11 @@ export default function MyRecipesPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} showStatus={true} />
+              <div key={recipe.id} className="h-full flex flex-col">
+                <RecipeCard recipe={recipe} showStatus={true} className="h-full" />
+              </div>
             ))}
           </div>
         )}

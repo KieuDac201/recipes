@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -161,10 +162,12 @@ export default function AdminSidebar() {
           </Link>
 
           <div className="flex items-center gap-3 mt-2 px-2 py-1.5 rounded-lg bg-[#efeeea]/60">
-            <img
+            <Image
               alt="GourmetPop Admin"
-              className="w-8 h-8 rounded-full object-cover border border-[#e0bfbd]"
+              className="rounded-full object-cover border border-[#e0bfbd]"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLNIjzHkQVNaRQl-c8_FjKfJ3PGEwBtcgDGpKO4_BzoCWj9YZDAhqkhreAgk0cNxVZZsZMPJCKrKTn0oAntLkKDtlr5NDHBfU1hPFuJ9YqhZ-WwIvnCdZwG4tFyv7aURtMolw6Nbs2vNieg5tXSa_8k-UgRsHHgd8AHskjoiulBiEsNHmqdxgrNXj0PJK2BCOQRXw9Dtjsoc0ZipFW5GoIku7pPAd1uyTwlkmcfIto_q9b6fZZOfqV"
+              width={32}
+              height={32}
             />
             <div className="overflow-hidden">
               <p className="font-[var(--font-headline)] text-xs font-bold text-[#1b1c1a] truncate">Đầu Bếp Quản Trị</p>

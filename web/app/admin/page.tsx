@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { recipeService, deleteRecipe, getAdminRecipes, updateRecipeStatus } from "@/src/services/recipeApi";
-import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
-import { ApiError } from "@/src/services/apiClient";
-import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import { RecipeStatus } from "@/src/types/recipe";
+import { useAdminRecipesManagement } from "@/src/hooks/useAdminRecipesManagement";
 import ApproveRecipeModal from "./components/ApproveRecipeModal";
 import RejectRecipeModal from "./components/RejectRecipeModal";
 import DeleteRecipeModal from "./components/DeleteRecipeModal";
 import AdminRecipeRow from "./components/AdminRecipeRow";
 import AdminEmptyState from "./components/AdminEmptyState";
-import AdminToast, { ToastState } from "./components/AdminToast";
+import AdminToast from "./components/AdminToast";
 import InfiniteScrollSentinel from "../components/InfiniteScrollSentinel";
-
 import Tabs from "@/app/components/Tabs";
 
 const ADMIN_STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
@@ -23,211 +19,39 @@ const ADMIN_STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
   { label: "Bị từ chối", value: "rejected" },
 ];
 
-const ADMIN_PAGE_SIZE = 10;
-
 export default function AdminDashboardPage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeStatus, setActiveStatus] = useState<RecipeStatus>("all");
-
-  // Delete modal state
-  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Approve modal state
-  const [recipeToApprove, setRecipeToApprove] = useState<Recipe | null>(null);
-  const [isApproving, setIsApproving] = useState(false);
-
-  // Reject modal state
-  const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [rejectError, setRejectError] = useState<string | null>(null);
-  const [isRejecting, setIsRejecting] = useState(false);
-
-  // Toast notification state
-  const [toast, setToast] = useState<ToastState | null>(null);
-
-  const showToast = (message: string, type: "success" | "error" = "success") => {
-
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Fetch recipes from admin API
-  const loadRecipes = useCallback(async (search?: string, status: RecipeStatus = "all") => {
-    setIsLoading(true);
-    try {
-      const res = await getAdminRecipes({
-        limit: ADMIN_PAGE_SIZE,
-        current_page: 1,
-        search: search || undefined,
-        status: status,
-      });
-      setRecipes(res.data || []);
-      setPagination(res.pagination || null);
-    } catch (err: any) {
-      console.error("[AdminDashboard] Error loading recipes:", err);
-      showToast(
-        err instanceof ApiError
-          ? err.message
-          : "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối.",
-        "error"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Initial load and on search/status change
-  useEffect(() => {
-    loadRecipes(debouncedSearch, activeStatus);
-  }, [debouncedSearch, activeStatus, loadRecipes]);
-
-  // Load more handler
-  const handleLoadMore = useCallback(async () => {
-    if (!pagination || isLoadingMore) return;
-    const nextPage = (pagination.currentPage || 1) + 1;
-    if (nextPage > (pagination.totalPage || 1)) return;
-
-    setIsLoadingMore(true);
-    try {
-      const res = await getAdminRecipes({
-        limit: ADMIN_PAGE_SIZE,
-        current_page: nextPage,
-        search: debouncedSearch || undefined,
-        status: activeStatus,
-      });
-      setRecipes((prev) => [...prev, ...(res.data || [])]);
-      setPagination(res.pagination || null);
-    } catch (err: any) {
-      console.error("[AdminDashboard] Error loading more recipes:", err);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [pagination, isLoadingMore, debouncedSearch, activeStatus]);
-
-  const hasMore = pagination
-    ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
-    : false;
-
-  // Use common infinite scroll hook
-  const { sentinelRef } = useInfiniteScroll({
-    hasMore,
-    isLoading: isLoading || isLoadingMore,
-    onLoadMore: handleLoadMore,
-  });
-
-  // Handle delete recipe
-  const handleConfirmDelete = async () => {
-    if (!recipeToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteRecipe(recipeToDelete.id);
-      setRecipes((prev) => prev.filter((r) => r.id !== recipeToDelete.id));
-      showToast(`Đã xóa thành công công thức "${recipeToDelete.title}"!`);
-      setRecipeToDelete(null);
-    } catch (err: any) {
-      console.error("[AdminDashboard] Error deleting recipe:", err);
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "Đã xảy ra lỗi khi xóa công thức. Vui lòng thử lại.";
-      showToast(msg, "error");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Handle approve recipe
-  const handleConfirmApprove = async () => {
-    if (!recipeToApprove) return;
-
-    setIsApproving(true);
-    try {
-      await updateRecipeStatus(recipeToApprove.id, "approved");
-      setRecipes((prev) =>
-        prev.map((r) =>
-          r.id === recipeToApprove.id
-            ? { ...r, status: "approved", rejection_reason: null }
-            : r
-        )
-      );
-      showToast(`Đã duyệt công thức "${recipeToApprove.title}" thành công!`);
-      setRecipeToApprove(null);
-    } catch (err: any) {
-      console.error("[AdminDashboard] Error approving recipe:", err);
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "Đã xảy ra lỗi khi duyệt công thức. Vui lòng thử lại.";
-      showToast(msg, "error");
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  // Handle reject recipe
-  const handleConfirmReject = async () => {
-    if (!recipeToReject) return;
-
-    if (!rejectionReason.trim()) {
-      setRejectError("Vui lòng nhập lý do từ chối công thức.");
-      return;
-    }
-
-    setIsRejecting(true);
-    try {
-      await updateRecipeStatus(recipeToReject.id, "rejected", rejectionReason.trim());
-      setRecipes((prev) =>
-        prev.map((r) =>
-          r.id === recipeToReject.id
-            ? { ...r, status: "rejected", rejection_reason: rejectionReason.trim() }
-            : r
-        )
-      );
-      showToast(`Đã từ chối công thức "${recipeToReject.title}"!`);
-      setRecipeToReject(null);
-      setRejectionReason("");
-      setRejectError(null);
-    } catch (err: any) {
-      console.error("[AdminDashboard] Error rejecting recipe:", err);
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "Đã xảy ra lỗi khi từ chối công thức. Vui lòng thử lại.";
-      showToast(msg, "error");
-    } finally {
-      setIsRejecting(false);
-    }
-  };
-
-  // Format date helper
-  const formatDate = (dateInput: string | Date | undefined) => {
-    if (!dateInput) return "Vừa tạo";
-    try {
-      const d = new Date(dateInput);
-      return d.toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch {
-      return "Không xác định";
-    }
-  };
+  const {
+    recipes,
+    pagination,
+    isLoading,
+    isLoadingMore,
+    searchQuery,
+    setSearchQuery,
+    debouncedSearch,
+    activeStatus,
+    setActiveStatus,
+    recipeToDelete,
+    setRecipeToDelete,
+    isDeleting,
+    recipeToApprove,
+    setRecipeToApprove,
+    isApproving,
+    recipeToReject,
+    openRejectModal,
+    closeRejectModal,
+    rejectionReason,
+    setRejectionReason,
+    rejectError,
+    setRejectError,
+    isRejecting,
+    toast,
+    setToast,
+    loadRecipes,
+    handleConfirmDelete,
+    handleConfirmApprove,
+    handleConfirmReject,
+    sentinelRef,
+  } = useAdminRecipesManagement();
 
   return (
     <main className="p-4 md:p-12 min-h-screen relative z-10 max-w-[1300px] mx-auto">
@@ -427,11 +251,7 @@ export default function AdminDashboardPage() {
                   key={item.id}
                   recipe={item}
                   onApprove={(r) => setRecipeToApprove(r)}
-                  onReject={(r) => {
-                    setRecipeToReject(r);
-                    setRejectionReason(r.rejection_reason || "");
-                    setRejectError(null);
-                  }}
+                  onReject={(r) => openRejectModal(r)}
                   onDelete={(r) => setRecipeToDelete(r)}
                 />
               ))}
@@ -465,11 +285,7 @@ export default function AdminDashboardPage() {
           setRejectionReason(val);
           if (rejectError) setRejectError(null);
         }}
-        onClose={() => {
-          setRecipeToReject(null);
-          setRejectionReason("");
-          setRejectError(null);
-        }}
+        onClose={closeRejectModal}
         onConfirm={handleConfirmReject}
       />
 

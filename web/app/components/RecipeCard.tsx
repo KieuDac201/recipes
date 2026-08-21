@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Recipe, RecipeStatus } from "@/src/types/recipe";
 
 export interface RecipeCardProps {
@@ -45,7 +46,7 @@ export default function RecipeCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-[#e5e3dc] overflow-hidden hover:shadow-lg transition-all flex flex-col group ${className}`}
+      className={`bg-white rounded-2xl border border-[#e5e3dc] overflow-hidden hover:shadow-lg transition-all flex flex-col h-full group ${className}`}
     >
       {/* Thumbnail + Status Badge */}
       <Link
@@ -53,10 +54,12 @@ export default function RecipeCard({
         className="relative aspect-[16/10] overflow-hidden bg-[#e9e8e4] block"
       >
         {recipe.image_url ? (
-          <img
+          <Image
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl bg-[#f4f4f0]">
@@ -73,13 +76,13 @@ export default function RecipeCard({
 
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col justify-between">
-        <div>
+        <div className="flex-1">
           <Link href={recipeUrl}>
-            <h3 className="font-bold text-base text-[#1b1c1a] line-clamp-2 group-hover:text-[#ae2f34] transition-colors mb-1">
+            <h3 className="font-bold text-base text-[#1b1c1a] line-clamp-2 min-h-[2.75rem] leading-snug group-hover:text-[#ae2f34] transition-colors mb-1.5">
               {recipe.title}
             </h3>
           </Link>
-          <p className="text-xs text-[#8c706f] line-clamp-2 mb-4">
+          <p className="text-xs text-[#8c706f] line-clamp-2 mb-4 leading-relaxed">
             {recipe.description || "Chưa có mô tả chi tiết."}
           </p>
 
@@ -97,7 +100,7 @@ export default function RecipeCard({
         </div>
 
         {/* Meta & Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f]">
+        <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f] mt-auto">
           <div className="flex items-center gap-3">
             <span
               className="flex items-center gap-1"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Recipe } from "@/src/types/recipe";
 
 interface AdminRecipeRowProps {
@@ -36,13 +37,12 @@ export default function AdminRecipeRow({
       <div className="col-span-1 md:col-span-6 flex items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] flex-shrink-0 overflow-hidden flex items-center justify-center border border-[#e0bfbd]/40 relative group-hover:shadow-sm transition-shadow">
           {recipe.image_url ? (
-            <img
+            <Image
               alt={recipe.title}
-              className="w-full h-full object-cover"
+              className="object-cover"
               src={recipe.image_url}
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
+              fill
+              sizes="48px"
             />
           ) : (
             <span className="material-symbols-outlined text-[#8c706f]">image</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, ChangeEvent, DragEvent } from "react";
+import Image from "next/image";
 import { uploadImage, validateImageFile } from "@/src/services/uploadApi";
 
 interface ImageUploaderProps {
@@ -123,10 +124,13 @@ export function ImageUploader({
             </div>
           ) : value ? (
             <>
-              <img
+              <Image
                 src={value}
                 alt={label}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                fill
+                sizes="192px"
+                unoptimized={value.startsWith("blob:") || value.startsWith("data:")}
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
                 <span className="text-white font-[var(--font-headline)] text-xs font-bold flex items-center gap-1 bg-[#ff6b6b] px-2.5 py-1 rounded-full shadow-sm">
@@ -178,10 +182,13 @@ export function ImageUploader({
 
       {value ? (
         <div className="relative rounded-3xl overflow-hidden border-2 border-[#e3e2df] aspect-[16/7] md:aspect-[21/8] min-h-[260px] md:min-h-[340px] max-h-[440px] group shadow-sm bg-[#faf9f5]">
-          <img
+          <Image
             src={value}
             alt="Ảnh xem trước món ăn"
-            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+            fill
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            unoptimized={value.startsWith("blob:") || value.startsWith("data:")}
+            className="object-cover group-hover:scale-102 transition-transform duration-500"
           />
 
           {/* Badge Cloudinary Verified */}

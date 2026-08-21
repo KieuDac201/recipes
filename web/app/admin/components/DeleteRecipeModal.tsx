@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Recipe } from "@/src/types/recipe";
 
 interface DeleteRecipeModalProps {
@@ -35,12 +36,14 @@ export default function DeleteRecipeModal({
 
         {/* Target Recipe Preview Card */}
         <div className="p-3.5 rounded-2xl bg-[#faf9f5] border border-[#efeeea] flex items-center gap-3.5 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] overflow-hidden flex-shrink-0 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] overflow-hidden flex-shrink-0 flex items-center justify-center relative">
             {recipe.image_url ? (
-              <img
+              <Image
                 src={recipe.image_url}
                 alt={recipe.title}
-                className="w-full h-full object-cover"
+                fill
+                sizes="48px"
+                className="object-cover"
               />
             ) : (
               <span className="material-symbols-outlined text-[#8c706f]">image</span>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getRecipeByIdOrSlug, getPublicRecipes } from "@/src/services/recipeApi";
 import ServingScaler from "@/app/components/ServingScaler";
 import RecipeActions from "@/app/components/RecipeActions";
@@ -12,7 +13,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// ISR: Cache pages and revalidate in background every 60 seconds
+// ISR: Cache pages and revalidate in background every 60 seconds (RECIPE_DETAIL_REVALIDATE_SECONDS)
 export const revalidate = 60;
 export const dynamicParams = true;
 
@@ -35,9 +36,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const recipe = await getRecipeByIdOrSlug(slug);
   if (!recipe) return { title: "Không Tìm Thấy Công Thức" };
+  const pageTitle = `${recipe.title} — Bếp Phương`;
+  const pageDesc = recipe.description || "Khám phá công thức nấu ăn đặc sắc cùng Bếp Phương.";
+  const pageUrl = `/recipes/${recipe.slug || recipe.id}`;
   return {
-    title: `${recipe.title} — Bếp Phương`,
-    description: recipe.description || undefined,
+    title: pageTitle,
+    description: pageDesc,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title: pageTitle,
+      description: pageDesc,
+      url: pageUrl,
+      siteName: "Bếp Phương",
+      locale: "vi_VN",
+      type: "article",
+      images: recipe.image_url ? [{ url: recipe.image_url, alt: recipe.title }] : [],
+    },
   };
 }
 
@@ -48,8 +64,34 @@ export default async function RecipePage({ params }: PageProps) {
 
   const { ingredients = [], instructions = [], categories = [] } = recipe;
 
+  // Schema.org Recipe JSON-LD for Rich Snippets
+  const recipeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    name: recipe.title,
+    image: recipe.image_url ? [recipe.image_url] : [],
+    description: recipe.description || undefined,
+    prepTime: `PT${recipe.prep_time_minutes || 0}M`,
+    cookTime: `PT${recipe.cook_time_minutes || 0}M`,
+    totalTime: `PT${(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)}M`,
+    recipeYield: `${recipe.servings || 1} người`,
+    recipeIngredient: ingredients.map(
+      (i) => `${i.amount} ${i.unit} ${i.name}`
+    ),
+    recipeInstructions: instructions.map((step) => ({
+      "@type": "HowToStep",
+      text: step.instruction,
+    })),
+  };
+
   return (
     <main className="flex-grow w-full max-w-[1200px] mx-auto px-4 md:px-12 py-16">
+      {/* Schema.org Recipe Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(recipeJsonLd) }}
+      />
+
       {/* ── View Tracker ─────────────────────────────────────── */}
       <ViewTracker recipeId={recipe.id} />
 
@@ -96,11 +138,20 @@ export default async function RecipePage({ params }: PageProps) {
 
         {/* Hero image */}
         <div className="w-full aspect-[16/7] md:aspect-[21/8] min-h-[280px] md:min-h-[360px] rounded-3xl overflow-hidden shadow-[0_10px_30px_-10px_rgba(255,107,107,0.15)] relative group cursor-pointer mb-8">
-          <img
-            src={recipe.image_url}
-            alt={recipe.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
+          {recipe.image_url ? (
+            <Image
+              src={recipe.image_url}
+              alt={recipe.title}
+              fill
+              priority
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-6xl bg-[#f4f4f0]">
+              🍲
+            </div>
+          )}
         </div>
 
         {/* Recipe Description Section */}
@@ -169,11 +220,13 @@ export default async function RecipePage({ params }: PageProps) {
 
                   {/* Optional step image */}
                   {step.image_url && (
-                    <div className="rounded-2xl overflow-hidden shadow-sm aspect-video group-hover:shadow-[0_10px_30px_-10px_rgba(0,176,131,0.2)] transition-shadow max-w-lg">
-                      <img
+                    <div className="relative rounded-2xl overflow-hidden shadow-sm aspect-video group-hover:shadow-[0_10px_30px_-10px_rgba(0,176,131,0.2)] transition-shadow max-w-lg">
+                      <Image
                         src={step.image_url}
                         alt={`Bước ${step.step_number}`}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 512px"
+                        className="object-cover"
                       />
                     </div>
                   )}
