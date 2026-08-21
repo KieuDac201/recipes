@@ -18,7 +18,8 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: "Bếp Phương — Công Thức Món Ăn Hấp Dẫn",
-  description: "Khám phá, nấu nướng và chia sẻ những công thức món ăn đặc sắc cùng Bếp Phương.",
+  description:
+    "Khám phá, nấu nướng và chia sẻ những công thức món ăn đặc sắc cùng Bếp Phương.",
 };
 
 export default function RootLayout({
@@ -34,7 +35,7 @@ export default function RootLayout({
       <head>
         {/* Material Symbols Outlined for icons */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
           rel="stylesheet"
         />
       </head>

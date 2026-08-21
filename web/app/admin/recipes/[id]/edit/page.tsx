@@ -6,11 +6,12 @@ import { useParams, useRouter } from "next/navigation";
 import { Step1BasicInfo } from "../../create/components/Step1BasicInfo";
 import { Step2IngredientsInstructions } from "../../create/components/Step2IngredientsInstructions";
 import { Step3PreviewPublish } from "../../create/components/Step3PreviewPublish";
-import { AVAILABLE_CATEGORIES } from "../../create/components/CategorySelector";
 import Tabs from "@/app/components/Tabs";
 import { getRecipeByIdOrSlug, updateRecipe } from "@/src/services/recipeApi";
+import { getCategories } from "@/src/services/categoryApi";
 import { ApiError } from "@/src/services/apiClient";
 import {
+  Category,
   CreateRecipeFormData,
   Recipe,
   RecipeBody,
@@ -62,7 +63,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
   };
 
   // Convert loaded RecipeDetail to form data structure
-  const populateFormData = useCallback((detail: RecipeDetail) => {
+  const populateFormData = useCallback((detail: RecipeDetail, availableCategories: Category[]) => {
     // Map category names or IDs to category IDs
     const matchedCategoryIds: number[] = [];
     if (Array.isArray(detail.categories)) {
@@ -70,7 +71,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         if (typeof catItem === "number") {
           matchedCategoryIds.push(catItem);
         } else if (typeof catItem === "string") {
-          const match = AVAILABLE_CATEGORIES.find(
+          const match = availableCategories.find(
             (c) =>
               c.name.toLowerCase() === catItem.toLowerCase() ||
               c.slug.toLowerCase() === catItem.toLowerCase()
@@ -128,13 +129,16 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       setIsLoadingRecipe(true);
       setLoadError(null);
       try {
-        const data = await getRecipeByIdOrSlug(recipeId);
-        if (!data) {
+        const [recipeData, categoriesData] = await Promise.all([
+          getRecipeByIdOrSlug(recipeId),
+          getCategories(),
+        ]);
+        if (!recipeData) {
           if (isMounted) setLoadError("Không tìm thấy công thức yêu cầu.");
           return;
         }
         if (isMounted) {
-          populateFormData(data);
+          populateFormData(recipeData, categoriesData);
         }
       } catch (err: any) {
         console.error("[EditRecipePage] Error loading recipe:", err);

@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit"
 const app = express()
 
 const apiLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 phút
+  windowMs: 5 * 60 * 1000, // 5 phút
   max: 100, // Tối đa 100 requests/IP
   message: "Too many requests from this IP, please try again after 10 minutes",
 })

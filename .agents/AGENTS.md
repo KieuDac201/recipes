@@ -189,3 +189,22 @@ When creating a new endpoint (e.g. for `recipes`, `categories`, `ingredients`):
 - `npm run build`: Builds the Next.js production bundle.
 - `npm start`: Runs the Next.js production server.
 
+---
+
+## 7. Frontend Architecture & Zero-Refactor UI Guidelines (`/web`)
+
+When creating or modifying frontend pages and UI components under `/web/app`:
+
+1. **Zero-Refactor Principle**: Never generate monolithic `page.tsx` (> 200 lines). Every feature page must be decomposed into subcomponents located in `components/` subfolder.
+2. **Component Hierarchy**:
+   - **Global Shared Components** -> `web/app/components/` (`Toast.tsx`, `Tabs.tsx`, `RecipeCard.tsx`, etc.)
+   - **Admin Domain Shared Components** -> `web/app/admin/components/` (`AdminPageHeader.tsx`, `AdminSearchBar.tsx`, `AdminToast.tsx`, `AdminEmptyState.tsx`, `AdminSidebar.tsx`)
+   - **Feature Subcomponents** -> `web/app/admin/<feature>/components/` (`<Feature>Modal.tsx`, `Delete<Feature>Modal.tsx`, `<Feature>TableRow.tsx`, `<Feature>Skeleton.tsx`)
+3. **Common Components Reuse**:
+   - Always reuse `AdminPageHeader`, `AdminSearchBar`, `AdminToast`, and `AdminEmptyState`.
+4. **TypeScript Strictness**:
+   - Define exact interfaces for props, payloads, and response data (no `any`).
+5. **Validation**:
+   - Always verify compilation with `npm run build` in `/web` before concluding any UI task.
+
+

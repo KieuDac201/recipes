@@ -233,7 +233,13 @@ Once the backend is running, you can access the interactive Swagger UI documenta
 - `DELETE /api/recipes/:id` — Delete recipe
 - `PATCH /api/recipes/:id/status` — Approve/Reject recipe (admin only)
 - `PATCH /api/recipes/:id/view-count` — Increment recipe view count
+- `GET /api/categories` — Get all categories
+- `POST /api/categories` — Create a new category (admin only)
+- `PUT /api/categories/:id` — Update category (admin only)
+- `DELETE /api/categories/:id` — Delete category (admin only)
+
 - `POST /api/upload` — Upload image to Cloudinary
+
 
 ---
 

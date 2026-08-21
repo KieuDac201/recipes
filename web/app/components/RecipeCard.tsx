@@ -1,63 +1,128 @@
 import Link from "next/link";
-import type { Recipe } from "@/src/types/recipe";
+import type { Recipe, RecipeStatus } from "@/src/types/recipe";
 
-interface RecipeCardProps {
+export interface RecipeCardProps {
   recipe: Recipe;
+  showStatus?: boolean;
+  className?: string;
 }
 
-export default function RecipeCard({ recipe }: RecipeCardProps) {
+export function getStatusBadge(status?: RecipeStatus) {
+  switch (status) {
+    case "approved":
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm backdrop-blur-sm bg-opacity-90">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+          Đã duyệt
+        </span>
+      );
+    case "rejected":
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 shadow-sm backdrop-blur-sm bg-opacity-90">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5" />
+          Bị từ chối
+        </span>
+      );
+    case "pending":
+    default:
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm backdrop-blur-sm bg-opacity-90">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
+          Chờ duyệt
+        </span>
+      );
+  }
+}
+
+export default function RecipeCard({
+  recipe,
+  showStatus = false,
+  className = "",
+}: RecipeCardProps) {
   const totalTime =
     (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0);
+  const recipeUrl = `/recipes/${recipe.slug || recipe.id}`;
 
   return (
-    <Link
-      href={`/recipes/${recipe.slug || recipe.id}`}
-      className="group bg-white rounded-3xl overflow-hidden flex flex-col p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_-10px_rgba(255,107,107,0.15)] shadow-[0_10px_30px_-10px_rgba(255,107,107,0.08)]"
+    <div
+      className={`bg-white rounded-2xl border border-[#e5e3dc] overflow-hidden hover:shadow-lg transition-all flex flex-col group ${className}`}
     >
-      {/* Image */}
-      <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-3 bg-[#f4f4f0]">
+      {/* Thumbnail + Status Badge */}
+      <Link
+        href={recipeUrl}
+        className="relative aspect-[16/10] overflow-hidden bg-[#e9e8e4] block"
+      >
         {recipe.image_url ? (
           <img
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-[#f4f4f0]">
             🍲
           </div>
         )}
-      </div>
+
+        {showStatus && (
+          <div className="absolute top-3 right-3 z-10 pointer-events-none">
+            {getStatusBadge(recipe.status)}
+          </div>
+        )}
+      </Link>
 
       {/* Content */}
-      <div className="flex flex-col flex-grow">
-        <h3 className="font-[var(--font-headline)] text-xl font-bold text-[#1b1c1a] mb-1 group-hover:text-[#ff6b6b] transition-colors line-clamp-2 leading-snug">
-          {recipe.title}
-        </h3>
-        <p className="text-sm text-[#584140] line-clamp-2 mb-3 flex-grow leading-relaxed">
-          {recipe.description || "Công thức món ăn thơm ngon, hấp dẫn."}
-        </p>
-        <div className="flex items-center justify-between text-xs font-bold text-[#584140] mt-auto pt-3 border-t border-[#e3e2df]/60">
-          <div className="flex items-center gap-1">
+      <div className="p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <Link href={recipeUrl}>
+            <h3 className="font-bold text-base text-[#1b1c1a] line-clamp-2 group-hover:text-[#ae2f34] transition-colors mb-1">
+              {recipe.title}
+            </h3>
+          </Link>
+          <p className="text-xs text-[#8c706f] line-clamp-2 mb-4">
+            {recipe.description || "Chưa có mô tả chi tiết."}
+          </p>
+
+          {/* Rejection reason alert */}
+          {showStatus &&
+            recipe.status === "rejected" &&
+            recipe.rejection_reason && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                <span className="font-semibold block mb-0.5">
+                  Lý do từ chối:
+                </span>
+                {recipe.rejection_reason}
+              </div>
+            )}
+        </div>
+
+        {/* Meta & Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f]">
+          <div className="flex items-center gap-3">
             <span
-              className="material-symbols-outlined text-[15px]"
-              style={{ fontVariationSettings: "'FILL' 0" }}
+              className="flex items-center gap-1"
+              title="Thời gian chế biến"
             >
-              schedule
+              <span className="material-symbols-outlined text-[16px]">
+                schedule
+              </span>
+              {totalTime > 0 ? `${totalTime}p` : "Nhanh"}
             </span>
-            {totalTime > 0 ? `${totalTime} phút` : "Nhanh gọn"}
-          </div>
-          <div className="flex items-center gap-1">
-            <span
-              className="material-symbols-outlined text-[15px]"
-              style={{ fontVariationSettings: "'FILL' 0" }}
-            >
-              visibility
+            <span className="flex items-center gap-1" title="Khẩu phần">
+              <span className="material-symbols-outlined text-[16px]">
+                group
+              </span>
+              {recipe.servings || 4} người
             </span>
-            <span>{(recipe.view_count || 0).toLocaleString()} lượt xem</span>
+            <span className="flex items-center gap-1" title="Lượt xem">
+              <span className="material-symbols-outlined text-[16px]">
+                visibility
+              </span>
+              {(recipe.view_count || 0).toLocaleString()}
+            </span>
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

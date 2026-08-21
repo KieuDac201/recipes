@@ -41,7 +41,9 @@ export default function RecipeListing() {
       setPagination(res.pagination || null);
     } catch (err: any) {
       console.error("Failed to load recipes:", err);
-      setError("Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối.");
+      setError(
+        "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +96,9 @@ export default function RecipeListing() {
 
         {/* Search bar */}
         <div className="relative w-full max-w-2xl mb-6 group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
             <span
-              className="material-symbols-outlined text-[#584140] group-focus-within:text-[#ff6b6b] transition-colors"
+              className="material-symbols-outlined text-[#8c706f] group-focus-within:text-[#ff6b6b] text-[22px] transition-colors"
               style={{ fontVariationSettings: "'FILL' 0" }}
             >
               search
@@ -107,15 +109,17 @@ export default function RecipeListing() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm công thức món ăn..."
-            className="w-full bg-[#f8f9fa] border-0 rounded-full py-4 pl-12 pr-12 text-lg text-[#1b1c1a] placeholder:text-[#584140]/60 focus:ring-2 focus:ring-[#ff6b6b] focus:bg-white shadow-inner transition-all duration-300 outline-none"
+            className="w-full bg-white border-2 border-[#e5e3dc] rounded-full py-4 pl-14 pr-12 text-base md:text-lg text-[#1b1c1a] font-medium placeholder:text-[#8c706f]/70 shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_14px_36px_rgba(255,107,107,0.12)] hover:border-[#ff6b6b]/40 focus:border-[#ff6b6b] focus:ring-4 focus:ring-[#ff6b6b]/15 focus:shadow-[0_14px_40px_rgba(255,107,107,0.18)] focus:outline-none focus-visible:outline-none outline-none transition-all duration-300"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#584140] hover:text-[#ff6b6b] cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8c706f] hover:text-[#ff6b6b] transition-colors cursor-pointer"
               title="Xóa tìm kiếm"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="material-symbols-outlined text-[20px] bg-[#efeeea] hover:bg-[#ffdad8] p-1 rounded-full transition-colors">
+                close
+              </span>
             </button>
           )}
         </div>
@@ -147,8 +151,12 @@ export default function RecipeListing() {
       {!isLoading && !error && recipes.length === 0 && (
         <div className="text-center py-24">
           <span className="text-6xl mb-4 block">🍽️</span>
-          <p className="text-xl font-semibold text-[#1b1c1a]">Không tìm thấy công thức nào.</p>
-          <p className="text-[#584140] mt-1">Hãy thử tìm kiếm bằng từ khóa khác.</p>
+          <p className="text-xl font-semibold text-[#1b1c1a]">
+            Không tìm thấy công thức nào.
+          </p>
+          <p className="text-[#584140] mt-1">
+            Hãy thử tìm kiếm bằng từ khóa khác.
+          </p>
           {debouncedSearch && (
             <button
               onClick={() => setSearch("")}
@@ -163,7 +171,7 @@ export default function RecipeListing() {
       {/* Recipe Grid */}
       {!isLoading && !error && recipes.length > 0 && (
         <>
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {recipes.map((recipe) => (
               <RecipeCard key={recipe.id} recipe={recipe} />
             ))}

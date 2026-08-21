@@ -1,7 +1,7 @@
 "use client";
-
-import { AVAILABLE_CATEGORIES } from "./CategorySelector";
-import { CreateRecipeFormData } from "@/src/types/recipe";
+import { useEffect, useState } from "react";
+import { getCategories } from "@/src/services/categoryApi";
+import { Category, CreateRecipeFormData } from "@/src/types/recipe";
 
 interface Step3Props {
   formData: CreateRecipeFormData;
@@ -24,8 +24,22 @@ export function Step3PreviewPublish({
   submitButtonLabel,
   loadingLabel,
 }: Step3Props) {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getCategories().then((data) => {
+      if (isMounted) {
+        setCategories(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Category names mapped from IDs
-  const selectedCategories = AVAILABLE_CATEGORIES.filter((c) =>
+  const selectedCategories = categories.filter((c) =>
     formData.categories.includes(c.id)
   );
 

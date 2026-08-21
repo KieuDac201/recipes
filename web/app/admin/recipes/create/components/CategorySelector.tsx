@@ -1,23 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CustomSelect, SelectOption } from "./CustomSelect";
-import { CategoryOption } from "@/src/types/recipe";
-
-export const AVAILABLE_CATEGORIES: CategoryOption[] = [
-  { id: 1, name: "Món Việt", slug: "mon-viet" },
-  { id: 2, name: "Món Nước", slug: "mon-nuoc" },
-  { id: 3, name: "Món Ăn Đường Phố", slug: "mon-an-duong-pho" },
-  { id: 4, name: "Bữa Sáng", slug: "bua-sang" },
-  { id: 21, name: "Món Cuốn", slug: "mon-cuon" },
-  { id: 22, name: "Món Cơm", slug: "mon-com" },
-  { id: 23, name: "Món Ăn Sáng", slug: "mon-an-sang" },
-  { id: 24, name: "Món Nhậu / Nhắm", slug: "mon-nhau" },
-];
-
-const CATEGORY_OPTIONS: SelectOption<number>[] = AVAILABLE_CATEGORIES.map((c) => ({
-  value: c.id,
-  label: c.name,
-}));
+import { getCategories } from "@/src/services/categoryApi";
+import { Category } from "@/src/types/recipe";
 
 interface CategorySelectorProps {
   selectedIds: number[];
@@ -30,6 +16,36 @@ export function CategorySelector({
   onChange,
   error,
 }: CategorySelectorProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCategories = async () => {
+      try {
+        const data = await getCategories();
+        if (isMounted) {
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("[CategorySelector] Failed to fetch categories:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const categoryOptions: SelectOption<number>[] = categories.map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -48,13 +64,17 @@ export function CategorySelector({
       </div>
 
       <CustomSelect<number>
-        options={CATEGORY_OPTIONS}
+        options={categoryOptions}
         value={selectedIds}
         onChange={onChange}
         isMulti={true}
         isSearchable={true}
         isClearable={true}
-        placeholder="Tìm kiếm và chọn danh mục món ăn..."
+        placeholder={
+          isLoading
+            ? "Đang tải danh mục..."
+            : "Tìm kiếm và chọn danh mục món ăn..."
+        }
         error={!!error}
       />
 

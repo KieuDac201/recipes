@@ -11,7 +11,9 @@ import RejectRecipeModal from "./components/RejectRecipeModal";
 import DeleteRecipeModal from "./components/DeleteRecipeModal";
 import AdminRecipeRow from "./components/AdminRecipeRow";
 import AdminEmptyState from "./components/AdminEmptyState";
+import AdminToast, { ToastState } from "./components/AdminToast";
 import InfiniteScrollSentinel from "../components/InfiniteScrollSentinel";
+
 import Tabs from "@/app/components/Tabs";
 
 const ADMIN_STATUS_TABS: Array<{ label: string; value: RecipeStatus }> = [
@@ -47,9 +49,10 @@ export default function AdminDashboardPage() {
   const [isRejecting, setIsRejecting] = useState(false);
 
   // Toast notification state
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
+
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
@@ -229,22 +232,7 @@ export default function AdminDashboardPage() {
   return (
     <main className="p-4 md:p-12 min-h-screen relative z-10 max-w-[1300px] mx-auto">
       {/* ── Toast Notification Banner ─────────────────────────────── */}
-      {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-floating flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 text-white ${toast.type === "error" ? "bg-[#ba1a1a]" : "bg-[#1b1c1a]"
-            }`}
-        >
-          <span
-            className={`material-symbols-outlined text-[22px] ${toast.type === "error" ? "text-white" : "text-[#06d6a0]"
-              }`}
-          >
-            {toast.type === "error" ? "error" : "check_circle"}
-          </span>
-          <span className="font-[var(--font-headline)] text-sm font-bold">
-            {toast.message}
-          </span>
-        </div>
-      )}
+      <AdminToast toast={toast} onClose={() => setToast(null)} />
 
       {/* ── Header ────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">

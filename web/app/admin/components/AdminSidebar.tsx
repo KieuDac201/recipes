@@ -6,11 +6,13 @@ import { useState } from "react";
 
 const navItems = [
   { name: "Bảng Điều Khiển", href: "/admin", icon: "dashboard" },
+  { name: "Danh Mục", href: "/admin/categories", icon: "category", activeOn: ["/admin/categories"] },
   { name: "Công Thức", href: "/admin/recipes/create", icon: "restaurant_menu", activeOn: ["/admin/recipes/create"] },
   { name: "Nguyên Liệu", href: "#ingredients", icon: "liquor" },
   { name: "Thống Kê", href: "#analytics", icon: "analytics" },
   { name: "Cài Đặt", href: "#settings", icon: "admin_panel_settings" },
 ];
+
 
 export default function AdminSidebar() {
   const pathname = usePathname();

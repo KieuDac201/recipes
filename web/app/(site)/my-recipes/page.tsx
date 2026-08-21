@@ -6,6 +6,7 @@ import AuthGuard from "@/app/components/AuthGuard";
 import { getMyRecipes } from "@/src/services/recipeApi";
 import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
 import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import RecipeCard from "@/app/components/RecipeCard";
 import RecipeSkeletonCard from "@/app/components/RecipeSkeletonCard";
 import InfiniteScrollSentinel from "@/app/components/InfiniteScrollSentinel";
 import Tabs from "@/app/components/Tabs";
@@ -98,33 +99,6 @@ export default function MyRecipesPage() {
     setActiveTab(tab);
   };
 
-  const getStatusBadge = (status?: RecipeStatus) => {
-    switch (status) {
-      case "approved":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-            Đã duyệt
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5" />
-            Bị từ chối
-          </span>
-        );
-      case "pending":
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
-            Chờ duyệt
-          </span>
-        );
-    }
-  };
-
   return (
     <AuthGuard>
       <main className="flex-grow w-full max-w-[1200px] mx-auto px-4 md:px-12 py-10">
@@ -214,68 +188,7 @@ export default function MyRecipesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recipes.map((recipe) => (
-              <div
-                key={recipe.id}
-                className="bg-white rounded-2xl border border-[#e5e3dc] overflow-hidden hover:shadow-lg transition-all flex flex-col group"
-              >
-                {/* Thumbnail + Status Badge */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-[#e9e8e4]">
-                  <img
-                    src={recipe.image_url || "/placeholder-recipe.jpg"}
-                    alt={recipe.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3">
-                    {getStatusBadge(recipe.status)}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-base text-[#1b1c1a] line-clamp-1 group-hover:text-[#ae2f34] transition-colors mb-1">
-                      {recipe.title}
-                    </h3>
-                    <p className="text-xs text-[#8c706f] line-clamp-2 mb-4">
-                      {recipe.description || "Chưa có mô tả chi tiết."}
-                    </p>
-
-                    {/* Rejection reason alert */}
-                    {recipe.status === "rejected" && recipe.rejection_reason && (
-                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
-                        <span className="font-semibold block mb-0.5">Lý do từ chối:</span>
-                        {recipe.rejection_reason}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Meta & Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f]">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">schedule</span>
-                        {(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)}p
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">group</span>
-                        {recipe.servings} người
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">visibility</span>
-                        {(recipe.view_count || 0).toLocaleString()}
-                      </span>
-                    </div>
-
-                    <Link
-                      href={`/recipes/${recipe.slug || recipe.id}`}
-                      className="font-semibold text-[#ae2f34] hover:underline flex items-center gap-0.5"
-                    >
-                      Xem chi tiết
-                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <RecipeCard key={recipe.id} recipe={recipe} showStatus={true} />
             ))}
           </div>
         )}
