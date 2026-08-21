@@ -58,6 +58,31 @@ httpClient.interceptors.response.use(
       const { status, data } = error.response;
       const errorMessage =
         data?.error || data?.message || error.message || "An unexpected server error occurred.";
+
+      // Handle 401 Unauthorized (Expired or invalid token)
+      if (status === 401 && typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+
+        const currentPath = window.location.pathname + window.location.search;
+        const isAuthRoute =
+          currentPath.startsWith("/login") ||
+          currentPath.startsWith("/register") ||
+          currentPath.startsWith("/forgot-password") ||
+          currentPath.startsWith("/reset-password");
+
+        if (!isAuthRoute) {
+          sessionStorage.setItem(
+            "session_expired_message",
+            "Phiên làm việc đã hết hạn hoặc bạn chưa đăng nhập. Vui lòng đăng nhập lại."
+          );
+          // Allow microtask queue to process any local state/draft saves before full redirect
+          setTimeout(() => {
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+          }, 100);
+        }
+      }
+
       return Promise.reject(new ApiError(errorMessage, status, data?.details));
     } else if (error.request) {
       return Promise.reject(

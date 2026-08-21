@@ -17,6 +17,15 @@ function LoginFormContent() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if redirected due to expired session
+    if (typeof window !== "undefined") {
+      const expiredMsg = sessionStorage.getItem("session_expired_message");
+      if (expiredMsg) {
+        setErrorMessage(expiredMsg);
+        sessionStorage.removeItem("session_expired_message");
+      }
+    }
+
     const isRegistered = searchParams.get("registered");
     const isReset = searchParams.get("reset");
     const prefilledEmail = searchParams.get("email");

@@ -223,6 +223,23 @@ export default function CreateRecipePage() {
       showToast("Tạo công thức thành công!");
     } catch (err: any) {
       console.error("[CreateRecipePage] Publication error:", err);
+
+      if (err instanceof ApiError && err.statusCode === 401) {
+        // Auto-save draft before session expiration redirect occurs
+        try {
+          localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+        } catch { }
+        setPublishError("Phiên làm việc đã hết hạn. Hệ thống đã lưu lại bản nháp. Vui lòng đăng nhập lại.");
+        showToast("Phiên hết hạn, đã lưu bản nháp của bạn!");
+        return;
+      }
+
+      if (err instanceof ApiError && err.statusCode === 403) {
+        setPublishError("Bạn không có quyền quản trị viên để tạo công thức.");
+        showToast("Lỗi 403: Bạn không có quyền thực hiện hành động này!");
+        return;
+      }
+
       const errMsg =
         err instanceof ApiError
           ? err.message

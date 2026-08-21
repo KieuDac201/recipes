@@ -1,15 +1,15 @@
 // src/utils/AppError.ts
 export class AppError extends Error {
-    public readonly statusCode: number;
-    public readonly isOperational: boolean;
-    public readonly details?: any;
+  public readonly statusCode: number
+  public readonly isOperational: boolean
+  public readonly details?: any
 
-    constructor(message: string, statusCode = 500, details?: any) {
-        super(message);
-        this.statusCode = statusCode;
-        this.isOperational = true;
-        this.details = details;
+  constructor(message: string, statusCode = 500, details?: any) {
+    super(message)
+    this.statusCode = statusCode
+    this.isOperational = true
+    this.details = details
 
-        Error.captureStackTrace(this, this.constructor);
-    }
+    Error.captureStackTrace(this, this.constructor)
+  }
 }

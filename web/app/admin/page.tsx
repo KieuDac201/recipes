@@ -231,14 +231,12 @@ export default function AdminDashboardPage() {
       {/* ── Toast Notification Banner ─────────────────────────────── */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-floating flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 text-white ${
-            toast.type === "error" ? "bg-[#ba1a1a]" : "bg-[#1b1c1a]"
-          }`}
+          className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-floating flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 text-white ${toast.type === "error" ? "bg-[#ba1a1a]" : "bg-[#1b1c1a]"
+            }`}
         >
           <span
-            className={`material-symbols-outlined text-[22px] ${
-              toast.type === "error" ? "text-white" : "text-[#06d6a0]"
-            }`}
+            className={`material-symbols-outlined text-[22px] ${toast.type === "error" ? "text-white" : "text-[#06d6a0]"
+              }`}
           >
             {toast.type === "error" ? "error" : "check_circle"}
           </span>
@@ -285,7 +283,7 @@ export default function AdminDashboardPage() {
               Tổng Số Công Thức
             </h3>
             <p className="font-[var(--font-headline)] text-3xl md:text-4xl font-extrabold text-[#1b1c1a]">
-              {isLoading ? "..." : recipes.length}
+              {isLoading ? "..." : pagination?.totalCount}
             </p>
           </div>
         </div>
@@ -306,7 +304,7 @@ export default function AdminDashboardPage() {
               Đã Xuất Bản
             </h3>
             <p className="font-[var(--font-headline)] text-3xl md:text-4xl font-extrabold text-[#1b1c1a]">
-              {isLoading ? "..." : recipes.length}
+              {isLoading ? "..." : pagination?.totalCount}
             </p>
           </div>
         </div>

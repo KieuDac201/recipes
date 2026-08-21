@@ -94,5 +94,5 @@ export function generateOtpEmailHtml(otp: string): string {
     </tr>
   </table>
 </body>
-</html>`;
+</html>`
 }

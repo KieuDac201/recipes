@@ -315,6 +315,23 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       showToast("Cập nhật công thức thành công!");
     } catch (err: any) {
       console.error("[EditRecipePage] Update error:", err);
+
+      if (err instanceof ApiError && err.statusCode === 401) {
+        // Auto-save edit draft to localStorage
+        try {
+          localStorage.setItem(`gourmet_recipe_edit_draft_${recipeId}`, JSON.stringify(formData));
+        } catch { }
+        setUpdateError("Phiên làm việc đã hết hạn. Hệ thống đã lưu lại thay đổi của bạn. Vui lòng đăng nhập lại.");
+        showToast("Phiên hết hạn, đã lưu bản nháp của bạn!");
+        return;
+      }
+
+      if (err instanceof ApiError && err.statusCode === 403) {
+        setUpdateError("Bạn không có quyền quản trị viên để chỉnh sửa công thức này.");
+        showToast("Lỗi 403: Bạn không có quyền thực hiện hành động này!");
+        return;
+      }
+
       const errMsg =
         err instanceof ApiError
           ? err.message

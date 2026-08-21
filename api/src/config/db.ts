@@ -1,13 +1,13 @@
-import pg from "pg";
+import pg from "pg"
 const { Pool } = pg
 
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    },
-    max: 10,
-    idleTimeoutMillis: 30000,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
 })
 
 export const query = (text: string, params?: any[]) => pool.query(text, params)
