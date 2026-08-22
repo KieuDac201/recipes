@@ -1,4 +1,4 @@
-import cron from "node-cron"
+import cron, { ScheduledTask } from "node-cron"
 import {
   isRedisConfigured,
   prepareViewCountsForSync,
@@ -58,7 +58,7 @@ export const syncViewCountsNow = async (): Promise<{
 /**
  * Initialize the view count sync cron job to run every 30 minutes
  */
-export const initViewCountSyncJob = (): cron.ScheduledTask => {
+export const initViewCountSyncJob = (): ScheduledTask => {
   // Cron format: */30 * * * * -> At every 30th minute
   const task = cron.schedule("*/30 * * * *", async () => {
     console.log("⏰ Running scheduled 30-minute recipe view count sync job...")
