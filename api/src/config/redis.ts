@@ -17,6 +17,8 @@ export const redis: Redis | null = isRedisConfigured
 export const REDIS_KEYS = {
   RECIPE_VIEWS: "recipe:views",
   RECIPE_VIEWS_SYNCING_PREFIX: "recipe:views:syncing",
+  CATEGORIES_ALL: "categories:all",
+  RECIPES_PUBLIC_PREFIX: "recipes:public",
 } as const
 
 /**

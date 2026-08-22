@@ -3,9 +3,9 @@
  */
 
 // Pagination page sizes
-export const PUBLIC_RECIPE_PAGE_SIZE = 8;
-export const ADMIN_RECIPE_PAGE_SIZE = 10;
-export const MY_RECIPE_PAGE_SIZE = 8;
+export const PUBLIC_RECIPE_PAGE_SIZE = 12;
+export const ADMIN_RECIPE_PAGE_SIZE = 12;
+export const MY_RECIPE_PAGE_SIZE = 12;
 
 // ISR / Caching revalidation periods (in seconds)
 export const RECIPE_DETAIL_REVALIDATE_SECONDS = 60;

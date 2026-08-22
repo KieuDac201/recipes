@@ -22,13 +22,19 @@ export const metadata: Metadata = {
   },
 };
 
+// Force Dynamic SSR: Always fetch fresh recipe list on every request
+// export const dynamic = "force-dynamic";sss
+
 export default async function Home() {
   // Pre-fetch initial page of recipes on the server for instant HTML rendering & SEO indexing
   let initialRecipes: Recipe[] = [];
   let initialPagination: PaginationMeta | null = null;
 
   try {
-    const res = await getPublicRecipes({ current_page: 1, limit: PUBLIC_RECIPE_PAGE_SIZE });
+    const res = await getPublicRecipes({
+      current_page: 1,
+      limit: PUBLIC_RECIPE_PAGE_SIZE,
+    });
     initialRecipes = res.data || [];
     initialPagination = res.pagination || null;
   } catch (err) {
@@ -64,4 +70,3 @@ export default async function Home() {
     </main>
   );
 }
-

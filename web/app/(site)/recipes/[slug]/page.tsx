@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getRecipeByIdOrSlug, getPublicRecipes } from "@/src/services/recipeApi";
+import {
+  getRecipeByIdOrSlug,
+  getPublicRecipes,
+} from "@/src/services/recipeApi";
 import ServingScaler from "@/app/components/ServingScaler";
 import RecipeActions from "@/app/components/RecipeActions";
 import CategoryBadge from "@/app/components/CategoryBadge";
@@ -13,8 +16,8 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// ISR: Cache pages and revalidate in background every 60 seconds (RECIPE_DETAIL_REVALIDATE_SECONDS)
-export const revalidate = 60;
+// ISR: Cache static HTML for 24 hours (86,400s) + On-Demand Revalidation upon updates
+export const revalidate = 86400;
 export const dynamicParams = true;
 
 /**
@@ -27,17 +30,23 @@ export async function generateStaticParams() {
       slug: recipe.slug || String(recipe.id),
     }));
   } catch (error) {
-    console.error("[generateStaticParams] Failed to fetch recipes for pre-rendering:", error);
+    console.error(
+      "[generateStaticParams] Failed to fetch recipes for pre-rendering:",
+      error,
+    );
     return [];
   }
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const recipe = await getRecipeByIdOrSlug(slug);
   if (!recipe) return { title: "Không Tìm Thấy Công Thức" };
   const pageTitle = `${recipe.title} — Bếp Phương`;
-  const pageDesc = recipe.description || "Khám phá công thức nấu ăn đặc sắc cùng Bếp Phương.";
+  const pageDesc =
+    recipe.description || "Khám phá công thức nấu ăn đặc sắc cùng Bếp Phương.";
   const pageUrl = `/recipes/${recipe.slug || recipe.id}`;
   return {
     title: pageTitle,
@@ -52,7 +61,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "Bếp Phương",
       locale: "vi_VN",
       type: "article",
-      images: recipe.image_url ? [{ url: recipe.image_url, alt: recipe.title }] : [],
+      images: recipe.image_url
+        ? [{ url: recipe.image_url, alt: recipe.title }]
+        : [],
     },
   };
 }
@@ -75,9 +86,7 @@ export default async function RecipePage({ params }: PageProps) {
     cookTime: `PT${recipe.cook_time_minutes || 0}M`,
     totalTime: `PT${(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)}M`,
     recipeYield: `${recipe.servings || 1} người`,
-    recipeIngredient: ingredients.map(
-      (i) => `${i.amount} ${i.unit} ${i.name}`
-    ),
+    recipeIngredient: ingredients.map((i) => `${i.amount} ${i.unit} ${i.name}`),
     recipeInstructions: instructions.map((step) => ({
       "@type": "HowToStep",
       text: step.instruction,
@@ -102,7 +111,9 @@ export default async function RecipePage({ params }: PageProps) {
           href="/"
           className="inline-flex items-center gap-2 text-[#584140] hover:text-[#ae2f34] text-sm font-semibold mb-6 transition-colors"
         >
-          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[20px]">
+            arrow_back
+          </span>
           Quay lại danh sách món ăn
         </Link>
 
@@ -117,7 +128,8 @@ export default async function RecipePage({ params }: PageProps) {
             {categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {categories.map((cat, idx) => {
-                  const catName = typeof cat === "string" ? cat : (cat as any).name;
+                  const catName =
+                    typeof cat === "string" ? cat : (cat as any).name;
                   return <CategoryBadge key={idx} category={catName} />;
                 })}
               </div>
@@ -183,7 +195,10 @@ export default async function RecipePage({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Ingredients sidebar (client — serving scaler) */}
         <aside className="lg:col-span-4">
-          <ServingScaler ingredients={ingredients} baseServings={recipe.servings} />
+          <ServingScaler
+            ingredients={ingredients}
+            baseServings={recipe.servings}
+          />
         </aside>
 
         {/* Instructions (server rendered) */}
@@ -204,7 +219,10 @@ export default async function RecipePage({ params }: PageProps) {
 
           <div className="space-y-8">
             {instructions.map((step) => (
-              <div key={step.id} className="flex items-start gap-4 sm:gap-5 group">
+              <div
+                key={step.id}
+                className="flex items-start gap-4 sm:gap-5 group"
+              >
                 {/* Step number bubble */}
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#ff6b6b] text-white flex items-center justify-center font-[var(--font-headline)] text-lg font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform mt-0.5">
                   {step.step_number}
@@ -241,7 +259,8 @@ export default async function RecipePage({ params }: PageProps) {
               Bạn đã nấu món này chưa?
             </h3>
             <p className="text-[#584140] text-sm mb-6">
-              Hãy chia sẻ thành quả và cảm nhận của bạn để truyền cảm hứng cho mọi người nhé!
+              Hãy chia sẻ thành quả và cảm nhận của bạn để truyền cảm hứng cho
+              mọi người nhé!
             </p>
             <div className="flex justify-center gap-3">
               <button className="bg-[#ff6b6b] text-white text-sm font-semibold px-8 py-3 rounded-full shadow-[0_4px_10px_-2px_rgba(255,107,107,0.4)] hover:-translate-y-1 hover:shadow-[0_6px_15px_-2px_rgba(255,107,107,0.5)] transition-all flex items-center gap-2 cursor-pointer">

@@ -10,6 +10,23 @@ import {
 } from "@/src/types/recipe";
 
 /**
+ * Safely trigger Next.js On-Demand Revalidation for a recipe slug/path
+ */
+export const triggerOnDemandRevalidation = async (slugOrId?: string | number): Promise<void> => {
+  if (typeof window !== "undefined") {
+    try {
+      await fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: slugOrId ? String(slugOrId) : undefined }),
+      });
+    } catch (err) {
+      console.warn("[OnDemandRevalidation] Failed to trigger Next.js cache revalidation:", err);
+    }
+  }
+};
+
+/**
  * Recipe Service module for all Recipe-related API interactions
  */
 export const recipeService = {
@@ -84,6 +101,7 @@ export const recipeService = {
    */
   create: async (payload: RecipeBody): Promise<Recipe> => {
     const response = await apiClient.post<CreateRecipeResponse>("/recipes", payload);
+    triggerOnDemandRevalidation(response.data?.slug || response.data?.id);
     return response.data;
   },
 
@@ -95,6 +113,7 @@ export const recipeService = {
       `/recipes/${encodeURIComponent(id)}`,
       payload
     );
+    triggerOnDemandRevalidation(response.data?.slug || payload.slug || id);
     return response.data;
   },
 
@@ -105,6 +124,7 @@ export const recipeService = {
     const response = await apiClient.delete<CreateRecipeResponse>(
       `/recipes/${encodeURIComponent(id)}`
     );
+    triggerOnDemandRevalidation(response.data?.slug || id);
     return response.data;
   },
 
@@ -130,6 +150,7 @@ export const recipeService = {
       `/recipes/${encodeURIComponent(id)}/status`,
       { status, rejection_reason: rejection_reason || null }
     );
+    triggerOnDemandRevalidation(id);
     return response.data;
   },
 };
