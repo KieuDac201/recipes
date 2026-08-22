@@ -292,6 +292,34 @@ const increaseRecipeViewCount = async (id: number) => {
   await query(updateSql, [id])
 }
 
+const batchIncrementRecipeViewCounts = async (
+  entries: Array<{ id: number; views: number }>
+): Promise<number> => {
+  if (!entries || entries.length === 0) {
+    return 0
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query("BEGIN")
+    let totalUpdated = 0
+    for (const { id, views } of entries) {
+      const res = await client.query(
+        `UPDATE recipes SET view_count = view_count + $1 WHERE id = $2`,
+        [views, id]
+      )
+      totalUpdated += res.rowCount ?? 0
+    }
+    await client.query("COMMIT")
+    return totalUpdated
+  } catch (error) {
+    await client.query("ROLLBACK")
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 export {
   findAllRecipes,
   findRecipeById,
@@ -302,4 +330,6 @@ export {
   updateRecipe,
   updateRecipeStatus,
   increaseRecipeViewCount,
+  batchIncrementRecipeViewCounts,
 }
+

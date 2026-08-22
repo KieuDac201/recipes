@@ -1,6 +1,8 @@
 import * as RecipeRepository from "../repositories/recipe.repository"
+import { incrementRecipeViewInRedis, isRedisConfigured } from "../config/redis"
 import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type"
 import { AppError } from "../utils/AppError"
+
 
 const getMyRecipes = async (
   limit: number,
@@ -68,8 +70,19 @@ const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_re
 }
 
 const increaseViewCount = async (id: number) => {
+  if (isRedisConfigured) {
+    try {
+      await incrementRecipeViewInRedis(id)
+      return
+    } catch (error) {
+      console.warn("⚠️ Redis increment failed, falling back to direct DB update:", error)
+    }
+  }
+
+  // Direct database fallback if Redis is not configured or fails
   await RecipeRepository.increaseRecipeViewCount(id)
 }
+
 
 const RecipeService = {
   getMyRecipes,

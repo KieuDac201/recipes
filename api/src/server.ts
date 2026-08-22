@@ -1,6 +1,7 @@
 import "dotenv/config"
-import app from "./app.js"
-import { pool } from "./config/db.js"
+import app from "./app"
+import { pool } from "./config/db"
+import { initViewCountSyncJob } from "./jobs/syncViewCounts.job"
 
 const PORT = process.env.PORT || 3000
 
@@ -8,6 +9,9 @@ const startServer = async () => {
   try {
     const res = await pool.query("SELECT NOW()")
     console.log(" Connected to PostgreSQL at:", res.rows[0].now)
+
+    // Initialize background cron jobs
+    initViewCountSyncJob()
 
     app.listen(PORT, () => {
       console.log(` Server is running on http://localhost:${PORT}`)
@@ -19,3 +23,4 @@ const startServer = async () => {
 }
 
 startServer()
+
