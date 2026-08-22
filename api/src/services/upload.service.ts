@@ -47,11 +47,28 @@ export const uploadImageToCloudinary = (
 
 export const extractPublicIdFromUrl = (url: string): string | null => {
   try {
-    const parts = url.split("/upload/")
+    if (!url || typeof url !== "string") return null
+    if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+      return null
+    }
+
+    // 1. Loại bỏ query parameters (ví dụ: ?_a=BAMAPqWQ0) và URL fragment hash (#...)
+    const cleanUrl = url.split("?")[0].split("#")[0]
+    const parts = cleanUrl.split("/upload/")
     if (parts.length < 2) return null
-    // Bỏ qua các transformation và version (v123456/)
-    const pathAfterUpload = parts[1].replace(/^(?:[a-zA-Z0-9_:,]+\/)*(?:v\d+\/)?/, "")
-    // Bỏ phần mở rộng (.jpg, .png, ...)
+
+    let pathAfterUpload = parts[1]
+
+    // 2. Nếu có version segment v\d+/ (ví dụ /v1/ hoặc /v1724321234/), mọi thứ phía sau CHÍNH XÁC là public_id
+    const versionMatch = pathAfterUpload.match(/(?:^|\/)v\d+\/(.+)$/)
+    if (versionMatch && versionMatch[1]) {
+      pathAfterUpload = versionMatch[1]
+    } else {
+      // 3. Nếu không có version, loại bỏ các transformation segments (w_1200, f_auto, q_auto:good...)
+      pathAfterUpload = pathAfterUpload.replace(/^(?:[a-zA-Z0-9_:,.-]+\/)*(?:v\d+\/)?/, "")
+    }
+
+    // 4. Bỏ phần mở rộng định dạng file (.jpg, .png, .webp...) nếu có
     return pathAfterUpload.replace(/\.[^/.]+$/, "")
   } catch {
     return null
@@ -105,7 +122,10 @@ export const cleanOrphanedImages = async (): Promise<void> => {
       if (toDeleteIds.length > 0) {
         await cloudinary.api.delete_resources(toDeleteIds)
         totalDeleted += toDeleteIds.length
-        console.log(`[Cron Job] Successfully deleted ${toDeleteIds.length} orphaned images:`, toDeleteIds)
+        console.log(
+          `[Cron Job] Successfully deleted ${toDeleteIds.length} orphaned images:`,
+          toDeleteIds
+        )
       }
 
       nextCursor = searchResult.next_cursor
