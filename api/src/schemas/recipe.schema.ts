@@ -244,6 +244,27 @@ const basePaginationShape = {
     description: "Search keyword matched against recipe title (case and accent-insensitive)",
     example: "pasta",
   }),
+  categories: z
+    .preprocess((val) => {
+      if (!val) return undefined
+      if (typeof val === "string") {
+        return val.includes(",")
+          ? val.split(",").map((s) => s.trim()).filter(Boolean)
+          : [val.trim()].filter(Boolean)
+      }
+      if (Array.isArray(val)) {
+        return val
+          .flatMap((item) => (typeof item === "string" ? item.split(",") : item))
+          .map((s) => String(s).trim())
+          .filter(Boolean)
+      }
+      return val
+    }, z.array(z.string()).optional())
+    .openapi({
+      description:
+        "Filter recipes by category IDs or slugs (accepts array or comma-separated string, e.g. '1,2' or ['1', '2'])",
+      example: ["1", "2"],
+    }),
   sort_by: z.enum(["created_at", "view_count"]).default("created_at").openapi({
     description: "Field to sort recipes by",
     example: "created_at",

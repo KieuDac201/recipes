@@ -41,6 +41,11 @@ export const recipeService = {
         search: params?.search?.trim() || undefined,
         sort_by: params?.sort_by || (params?.sortBy as any) || undefined,
         sort_order: params?.sort_order || params?.sortOrder || undefined,
+        categories: params?.categories
+          ? Array.isArray(params.categories)
+            ? params.categories.join(",")
+            : params.categories
+          : undefined,
       },
     });
   },

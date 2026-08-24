@@ -67,16 +67,20 @@ const getPublicRecipes = async ({
   search,
   sortBy,
   sortOrder,
+  categories,
 }: {
   limit: number
   currentPage: number
   search?: string
   sortBy: RecipeSortBy
   sortOrder: SortOrder
+  categories?: string[]
 }): Promise<{ recipes: Recipe[]; totalPage: number }> => {
   const normalizedSearch = search ? search.toLowerCase().trim() : ""
+  const normalizedCategories =
+    categories && categories.length > 0 ? categories.slice().sort().join(",") : ""
 
-  const cacheKey = `${REDIS_KEYS.RECIPES_PUBLIC_PREFIX}:p=${currentPage}:l=${limit}:s=${normalizedSearch}:sb=${sortBy}:so=${sortOrder}`
+  const cacheKey = `${REDIS_KEYS.RECIPES_PUBLIC_PREFIX}:p=${currentPage}:l=${limit}:s=${normalizedSearch}:sb=${sortBy}:so=${sortOrder}:c=${normalizedCategories}`
 
   // 1. Check Redis Cache first (Cache-Aside pattern)
   if (redis) {
@@ -99,6 +103,7 @@ const getPublicRecipes = async ({
     status: "approved",
     sortBy,
     sortOrder,
+    categories,
   })
   const responseData = { recipes: result.recipes, totalPage: result.totalPage }
 

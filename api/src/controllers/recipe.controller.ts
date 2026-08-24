@@ -15,6 +15,7 @@ const getPublicRecipes = async (req: Request, res: Response, next: NextFunction)
       search,
       sort_by: sortBy,
       sort_order: sortOrder,
+      categories,
     } = req.query as unknown as GetPublicRecipesQuery
 
     const { recipes, totalPage } = await RecipeService.getPublicRecipes({
@@ -23,6 +24,7 @@ const getPublicRecipes = async (req: Request, res: Response, next: NextFunction)
       search,
       sortBy,
       sortOrder,
+      categories,
     })
 
     return sendSuccess(res, recipes, 200, {

@@ -94,6 +94,7 @@ export type RecipeInput = RecipeBody;
 export type UpdateRecipeBody = Partial<RecipeBody>;
 
 export interface GetRecipesParams extends PaginationParams {
+  categories?: string | string[] | number | number[];
   category_id?: number;
   category_slug?: string;
   status?: RecipeStatus;

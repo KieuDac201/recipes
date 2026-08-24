@@ -1,7 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import RecipeListing from "../components/RecipeListing";
-import { getPublicRecipes } from "@/src/services/recipeApi";
-import type { Recipe, PaginationMeta } from "@/src/types/recipe";
+import RecipeSkeletonCard from "../components/RecipeSkeletonCard";
 import { PUBLIC_RECIPE_PAGE_SIZE } from "@/src/config/constants";
 
 export const metadata: Metadata = {
@@ -22,51 +22,20 @@ export const metadata: Metadata = {
   },
 };
 
-// Force Dynamic SSR: Always fetch fresh recipe list on every request
-// export const dynamic = "force-dynamic";sss
-
-export default async function Home() {
-  // Pre-fetch initial page of recipes on the server for instant HTML rendering & SEO indexing
-  let initialRecipes: Recipe[] = [];
-  let initialPagination: PaginationMeta | null = null;
-
-  try {
-    const res = await getPublicRecipes({
-      current_page: 1,
-      limit: PUBLIC_RECIPE_PAGE_SIZE,
-    });
-    initialRecipes = res.data || [];
-    initialPagination = res.pagination || null;
-  } catch (err) {
-    console.error("Failed to pre-fetch recipes on SSR:", err);
-  }
-
-  // Generate Schema.org ItemList JSON-LD for rich snippet search results
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "Danh sách công thức nấu ăn nổi bật",
-    numberOfItems: initialRecipes.length,
-    itemListElement: initialRecipes.map((recipe, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: recipe.title,
-      url: `/recipes/${recipe.slug || recipe.id}`,
-      image: recipe.image_url || undefined,
-    })),
-  };
-
+export default function Home() {
   return (
     <main className="flex-grow w-full max-w-[1200px] mx-auto px-4 md:px-12 py-16">
-      {/* Schema.org ItemList Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <RecipeListing
-        initialRecipes={initialRecipes}
-        initialPagination={initialPagination}
-      />
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-16">
+            {Array.from({ length: PUBLIC_RECIPE_PAGE_SIZE }).map((_, i) => (
+              <RecipeSkeletonCard key={i} />
+            ))}
+          </div>
+        }
+      >
+        <RecipeListing />
+      </Suspense>
     </main>
   );
 }

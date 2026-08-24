@@ -1,207 +1,55 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { getRecipes } from "@/src/services/recipeApi";
-import type { Recipe, PaginationMeta } from "@/src/types/recipe";
-import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
-import { PUBLIC_RECIPE_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from "@/src/config/constants";
+import { useRecipeListing } from "@/src/hooks/useRecipeListing";
+import { PUBLIC_RECIPE_PAGE_SIZE } from "@/src/config/constants";
+import RecipeSearchBar from "./RecipeSearchBar";
 import RecipeCard from "./RecipeCard";
 import RecipeSkeletonCard from "./RecipeSkeletonCard";
-import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
-import RecipeSortSelect, {
-  RecipeSortOption,
-  RECIPE_SORT_OPTIONS,
-} from "./RecipeSortSelect";
+import RecipeSortSelect from "./RecipeSortSelect";
+import CategorySelect from "./CategorySelect";
+import Pagination from "./Pagination";
 
-export interface RecipeListingProps {
-  initialRecipes?: Recipe[];
-  initialPagination?: PaginationMeta | null;
-}
+export default function RecipeListing() {
+  const {
+    recipes,
+    categories,
+    pagination,
+    isLoading,
+    error,
+    searchInput,
+    currentPage,
+    currentCategory,
+    currentSortOption,
+    hasActiveFilters,
+    gridSectionRef,
+    handleSearchChange,
+    handleClearSearch,
+    handleCategoryChange,
+    handleSortChange,
+    handlePageChange,
+    handleResetAllFilters,
+    handleRetry,
+  } = useRecipeListing();
 
-export default function RecipeListing({
-  initialRecipes = [],
-  initialPagination = null,
-}: RecipeListingProps) {
-  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(
-    initialPagination
-  );
-  const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState<RecipeSortOption>(
-    RECIPE_SORT_OPTIONS[0]
-  );
-  const [isLoading, setIsLoading] = useState(initialRecipes.length === 0);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadMoreError, setLoadMoreError] = useState(false);
-  
-  const isInitialMount = useRef(true);
-  const activeSearchRef = useRef("");
-  const activeSortRef = useRef<RecipeSortOption>(RECIPE_SORT_OPTIONS[0]);
-  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fetch initial page of recipes with optional search term and sort option
-  const fetchInitialRecipes = useCallback(
-    async (searchTerm: string, currentSort: RecipeSortOption = activeSortRef.current) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await getRecipes({
-          search: searchTerm || undefined,
-          current_page: 1,
-          limit: PUBLIC_RECIPE_PAGE_SIZE,
-          sort_by: currentSort.sortBy,
-          sort_order: currentSort.sortOrder,
-        });
-        setRecipes(res.data || []);
-        setPagination(res.pagination || null);
-      } catch (err: unknown) {
-        console.error("Failed to load recipes:", err);
-        setError(
-          "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối."
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Initial mount: always scroll to top & fetch if server didn't provide initialRecipes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      if (initialRecipes.length === 0) {
-        fetchInitialRecipes("");
-      }
-    }
-  }, [fetchInitialRecipes, initialRecipes.length]);
-
-  // Handle direct search input change with SEARCH_DEBOUNCE_MS debounce (no extra re-render state)
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-
-    searchTimerRef.current = setTimeout(() => {
-      activeSearchRef.current = value;
-      fetchInitialRecipes(value);
-    }, SEARCH_DEBOUNCE_MS);
-  };
-
-  const handleClearSearch = () => {
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-    setSearch("");
-    activeSearchRef.current = "";
-    fetchInitialRecipes("");
-  };
-
-  const handleSortChange = (newOption: RecipeSortOption) => {
-    setSortOption(newOption);
-    activeSortRef.current = newOption;
-    fetchInitialRecipes(activeSearchRef.current, newOption);
-  };
-
-  // Load more handler
-  const handleLoadMore = useCallback(async () => {
-    if (!pagination || isLoadingMore) return;
-    const nextPage = (pagination.currentPage || 1) + 1;
-    if (nextPage > (pagination.totalPage || 1)) return;
-
-    setIsLoadingMore(true);
-    setLoadMoreError(false);
-    try {
-      const res = await getRecipes({
-        search: activeSearchRef.current || undefined,
-        current_page: nextPage,
-        limit: PUBLIC_RECIPE_PAGE_SIZE,
-        sort_by: activeSortRef.current.sortBy,
-        sort_order: activeSortRef.current.sortOrder,
-      });
-      setRecipes((prev) => [...prev, ...(res.data || [])]);
-      setPagination(res.pagination || null);
-    } catch (err: unknown) {
-      console.error("Failed to load more recipes:", err);
-      setLoadMoreError(true);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [pagination, isLoadingMore]);
-
-  const hasMore = pagination
-    ? (pagination.currentPage || 1) < (pagination.totalPage || 1)
-    : false;
-
-  // Use common infinite scroll hook
-  const { sentinelRef } = useInfiniteScroll({
-    hasMore,
-    isLoading: isLoading || isLoadingMore,
-    hasError: loadMoreError,
-    onLoadMore: handleLoadMore,
-  });
+  const showToolbar = !error && (recipes.length > 0 || isLoading);
+  const showPagination = pagination && (pagination.totalPage || 0) > 1;
 
   return (
     <>
       {/* Hero + Search */}
-      <section className="text-center mb-16 flex flex-col items-center">
-        <h1 className="font-[var(--font-headline)] text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1a] mb-10 leading-tight">
-          Hôm nay chúng ta nấu gì nào? 🍳
-        </h1>
+      <RecipeSearchBar
+        value={searchInput}
+        onChange={handleSearchChange}
+        onClear={handleClearSearch}
+      />
 
-        {/* Search bar */}
-        <div className="relative w-full max-w-2xl mb-6 group">
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-            <span
-              className="material-symbols-outlined text-[#8c706f] group-focus-within:text-[#ff6b6b] text-[22px] transition-colors"
-              style={{ fontVariationSettings: "'FILL' 0" }}
-            >
-              search
-            </span>
-          </div>
-          <input
-            type="text"
-            value={search}
-            onChange={handleSearchChange}
-            placeholder="Tìm kiếm công thức món ăn..."
-            className="w-full bg-white border-2 border-[#e5e3dc] rounded-full py-4 pl-14 pr-12 text-base md:text-lg text-[#1b1c1a] font-medium placeholder:text-[#8c706f]/70 shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_14px_36px_rgba(255,107,107,0.12)] hover:border-[#ff6b6b]/40 focus:border-[#ff6b6b] focus:ring-4 focus:ring-[#ff6b6b]/15 focus:shadow-[0_14px_40px_rgba(255,107,107,0.18)] focus:outline-none focus-visible:outline-none outline-none transition-all duration-300"
-          />
-          {search && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8c706f] hover:text-[#ff6b6b] transition-colors cursor-pointer"
-              title="Xóa tìm kiếm"
-            >
-              <span className="material-symbols-outlined text-[20px] bg-[#efeeea] hover:bg-[#ffdad8] p-1 rounded-full transition-colors">
-                close
-              </span>
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* Error state */}
+      {/* Error State */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center max-w-lg mx-auto mb-10">
           <p className="font-semibold mb-3">{error}</p>
           <button
-            onClick={() => fetchInitialRecipes(activeSearchRef.current)}
+            type="button"
+            onClick={handleRetry}
             className="bg-[#ff6b6b] text-white px-6 py-2 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
           >
             Thử Lại
@@ -209,64 +57,75 @@ export default function RecipeListing({
         </div>
       )}
 
-      {/* Loading Skeleton on Initial Load */}
-      {isLoading && (
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: PUBLIC_RECIPE_PAGE_SIZE }).map((_, i) => (
-            <RecipeSkeletonCard key={i} />
-          ))}
-        </section>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && !error && recipes.length === 0 && (
-        <div className="text-center py-24">
-          <span className="text-6xl mb-4 block">🍽️</span>
-          <p className="text-xl font-semibold text-[#1b1c1a]">
-            Không tìm thấy công thức nào.
-          </p>
-          <p className="text-[#584140] mt-1">
-            Hãy thử tìm kiếm bằng từ khóa khác.
-          </p>
-          {search && (
-            <button
-              onClick={handleClearSearch}
-              className="mt-5 bg-[#ff6b6b] text-white px-6 py-2.5 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
-            >
-              Xóa Bộ Lọc
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Recipe Grid */}
-      {!isLoading && !error && recipes.length > 0 && (
-        <section aria-label="Danh sách công thức nấu ăn">
-          {/* Top Sort Controls: Left Aligned */}
-          <div className="flex items-center justify-between mb-6">
-            <RecipeSortSelect
-              value={sortOption}
-              onChange={handleSortChange}
-            />
+      {/* Main Content Area */}
+      <div ref={gridSectionRef}>
+        {/* Toolbar: Category Filter & Sort Select */}
+        {showToolbar && (
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <CategorySelect
+                categories={categories}
+                value={currentCategory}
+                onChange={handleCategoryChange}
+                disabled={isLoading}
+              />
+              <RecipeSortSelect
+                value={currentSortOption}
+                onChange={handleSortChange}
+                disabled={isLoading}
+              />
+            </div>
           </div>
+        )}
 
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-            {recipes.map((recipe) => (
-              <li key={recipe.id} className="h-full flex flex-col">
-                <RecipeCard recipe={recipe} className="h-full" />
-              </li>
+        {/* Loading / Empty / Recipe Grid */}
+        {isLoading ? (
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: PUBLIC_RECIPE_PAGE_SIZE }).map((_, i) => (
+              <RecipeSkeletonCard key={i} />
             ))}
-          </ul>
+          </section>
+        ) : recipes.length === 0 && !error ? (
+          <div className="text-center py-24">
+            <span className="text-6xl mb-4 block">🍽️</span>
+            <p className="text-xl font-semibold text-[#1b1c1a]">
+              Không tìm thấy công thức nào.
+            </p>
+            <p className="text-[#584140] mt-1">
+              Hãy thử tìm kiếm bằng từ khóa hoặc danh mục khác.
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetAllFilters}
+                className="mt-5 bg-[#ff6b6b] text-white px-6 py-2.5 rounded-full text-sm font-bold shadow hover:bg-[#ae2f34] transition-colors cursor-pointer"
+              >
+                Xóa Bộ Lọc
+              </button>
+            )}
+          </div>
+        ) : (
+          <section aria-label="Danh sách công thức nấu ăn">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+              {recipes.map((recipe) => (
+                <li key={recipe.id} className="h-full flex flex-col">
+                  <RecipeCard recipe={recipe} className="h-full" />
+                </li>
+              ))}
+            </ul>
 
-          {/* Sentinel element for infinite scrolling */}
-          <InfiniteScrollSentinel
-            sentinelRef={sentinelRef}
-            isLoadingMore={isLoadingMore}
-            loadingText="Đang tải thêm món ngon..."
-          />
-        </section>
-      )}
+            {/* Pagination */}
+            {showPagination && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagination.totalPage || 1}
+                onPageChange={handlePageChange}
+                isLoading={isLoading}
+              />
+            )}
+          </section>
+        )}
+      </div>
     </>
   );
 }
-

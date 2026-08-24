@@ -15,8 +15,10 @@ Bộ quy chuẩn và phương pháp luận chuyên nghiệp giúp AI tạo code 
 ## 1. Triết Lý Cốt Lõi: Zero-Refactor Architecture
 
 > **Nguyên tắc vàng**: "Hãy viết code như một Senior Frontend Architect đã review kỹ càng."
+>
 > - **Tuyệt đối KHÔNG viết file Page vượt quá 200 dòng** chứa toàn bộ JSX inline, Modal inline, Row inline, Toast inline.
 > - **Bắt buộc phân rã Component (Decomposition)** thành các module nhỏ, độc lập, đơn nhiệm (Single Responsibility Principle) ngay trong lượt code đầu tiên.
+> - **Ưu tiên sử dụng các thư viện có sẵn** thay vì tự viết lại (như Toast, Pagination, Modal, ...)
 
 ---
 
@@ -56,11 +58,14 @@ web/app/
 Khi tạo một trang (Page) quản lý hoặc giao diện mới, AI **BẮT BUỘC** thực hiện theo thứ tự sau:
 
 ### Bước 1: Khai báo Service & Type trước
+
 - Cập nhật Type trong `web/src/types/`.
 - Cập nhật Service API trong `web/src/services/` với đủ xử lý lỗi `ApiError`, async/await.
 
 ### Bước 2: Tách Subcomponents trước khi viết `page.tsx`
+
 Luôn tạo các file thành phần con trước:
+
 1. **Modal Form (`[Feature]Modal.tsx`)**:
    - Nhận `isOpen`, `data` (null khi tạo mới, object khi sửa), `isLoading`, `error`, `onClose`, `onSubmit`.
    - Tự động validate form và hiển thị cảnh báo lỗi rõ ràng.
@@ -72,7 +77,9 @@ Luôn tạo các file thành phần con trước:
    - Dùng animation `animate-pulse` mô phỏng chính xác cấu trúc dữ liệu đang tải.
 
 ### Bước 3: Viết Orchestrator `page.tsx` tinh gọn
+
 File `page.tsx` chỉ đóng vai trò nhạc trưởng (Orchestrator):
+
 - Quản lý state dữ liệu (`items`, `isLoading`, `searchQuery`).
 - Quản lý state modal (`isCreateOpen`, `editingItem`, `deletingItem`).
 - Ráp nối các common components:
@@ -89,17 +96,17 @@ File `page.tsx` chỉ đóng vai trò nhạc trưởng (Orchestrator):
 
 Tuân thủ nghiêm ngặt hệ thống Design System đã thiết lập:
 
-| Thành Phần | Giá Trị Màu / Class Chuẩn | Ứng Dụng |
-| :--- | :--- | :--- |
-| **Primary Brand** | `#ff6b6b` (Hover: `#ae2f34`) | Nút CTA chính, icon nổi bật, border focus |
-| **Dark Red/Text** | `#ae2f34` / `#584140` / `#1b1c1a` | Logo, tiêu đề chính, text body, nhãn form |
-| **Muted Text** | `#8c706f` | Subtitle, placeholder, timestamp, ID code |
-| **Backgrounds** | `#faf9f5` (Main) / `#f4f4f0` (Bar/Card) | Nền tổng thể, thanh filter, sidebar |
-| **Card / Modal** | `bg-white border-[#efeeea] rounded-3xl` | Card danh sách, container bảng, modal popup |
-| **Danger State** | `bg-[#ba1a1a]` (Hover: `#93000a`, Tint: `#ffdad6`)| Nút xóa vĩnh viễn, alert lỗi |
-| **Success State** | `text-[#006c4f] bg-[#00b083]/15` | Badge đã duyệt, toast thành công |
-| **Font Family** | `font-[var(--font-headline)]` | Tiêu đề H1-H4, nhãn button, text in đậm |
-| **Icon Set** | `material-symbols-outlined` | Sử dụng icon đồng nhất từ Google Symbols |
+| Thành Phần        | Giá Trị Màu / Class Chuẩn                          | Ứng Dụng                                    |
+| :---------------- | :------------------------------------------------- | :------------------------------------------ |
+| **Primary Brand** | `#ff6b6b` (Hover: `#ae2f34`)                       | Nút CTA chính, icon nổi bật, border focus   |
+| **Dark Red/Text** | `#ae2f34` / `#584140` / `#1b1c1a`                  | Logo, tiêu đề chính, text body, nhãn form   |
+| **Muted Text**    | `#8c706f`                                          | Subtitle, placeholder, timestamp, ID code   |
+| **Backgrounds**   | `#faf9f5` (Main) / `#f4f4f0` (Bar/Card)            | Nền tổng thể, thanh filter, sidebar         |
+| **Card / Modal**  | `bg-white border-[#efeeea] rounded-3xl`            | Card danh sách, container bảng, modal popup |
+| **Danger State**  | `bg-[#ba1a1a]` (Hover: `#93000a`, Tint: `#ffdad6`) | Nút xóa vĩnh viễn, alert lỗi                |
+| **Success State** | `text-[#006c4f] bg-[#00b083]/15`                   | Badge đã duyệt, toast thành công            |
+| **Font Family**   | `font-[var(--font-headline)]`                      | Tiêu đề H1-H4, nhãn button, text in đậm     |
+| **Icon Set**      | `material-symbols-outlined`                        | Sử dụng icon đồng nhất từ Google Symbols    |
 
 ---
 
@@ -120,6 +127,7 @@ Tuân thủ nghiêm ngặt hệ thống Design System đã thiết lập:
 ## 6. Checklist Tự Kiểm Tra Trước Khi Trả Lời (Self-Verification Checklist)
 
 Mỗi lần sinh mã UI mới, AI phải tự rà soát:
+
 - [ ] Đã tách file Modal, Row/Card, Skeleton thành components riêng chưa?
 - [ ] File `page.tsx` có ngắn gọn (< 200 dòng) và dễ đọc không?
 - [ ] Đã tái sử dụng các common components (`AdminPageHeader`, `AdminSearchBar`, `AdminToast`, `AdminEmptyState`) chưa?

@@ -10,17 +10,29 @@ const findAllRecipes = async ({
   authorId,
   sortBy,
   sortOrder,
+  categories,
 }: {
   limit: number
   offset: number
   search?: string
   status?: RecipeStatus
   authorId?: number
+  categories?: string[]
   sortBy: RecipeSortBy
   sortOrder: SortOrder
 }): Promise<{ recipes: Recipe[]; totalPage: number; totalCount: number }> => {
   const conditions = []
   const params = []
+
+  if (categories && categories.length > 0) {
+    conditions.push(
+      `id IN (SELECT rc.recipe_id FROM recipes_categories rc
+      JOIN categories c ON rc.category_id = c.id
+      WHERE rc.category_id::text = ANY($${conditions.length + 1}::text[]) 
+      OR c.slug = ANY($${conditions.length + 1}::text[])) `
+    )
+    params.push(categories)
+  }
   if (search) {
     conditions.push(`unaccent(LOWER(title)) LIKE unaccent(LOWER($${conditions.length + 1}))`)
     params.push(`%${search}%`)
@@ -116,7 +128,7 @@ const insertIngredientsSql = `INSERT INTO ingredients (recipe_id, name, amount, 
 
 const insertInstructionsSql = `INSERT INTO instructions (recipe_id, step_number, instruction, image_url)
                  SELECT $1, x.step_number, x.instruction, x.image_url
-                 FROM jsonb_to_recordset($2::jsonb) AS x(step_number int, instruction text, image_url text)`
+                 FROM jsonb_to_recordset($2::jsonb) AS x(step_number text, instruction text, image_url text)`
 
 const linkRecipeWithCateSql = `INSERT INTO recipes_categories (recipe_id, category_id)
                  SELECT $1, id FROM categories WHERE id = ANY($2::int[])`
