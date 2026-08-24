@@ -46,6 +46,8 @@ interface RecipeBody extends Omit<Recipe, "id" | "created_at"> {
 
 type RecipeStatus = "pending" | "approved" | "rejected" | "all"
 
+type RecipeSortBy = keyof Pick<Recipe, "created_at" | "view_count">
+
 export {
   Recipe,
   Ingredient,
@@ -55,4 +57,5 @@ export {
   InstructionBody,
   RecipeBody,
   RecipeStatus,
+  RecipeSortBy,
 }

@@ -244,6 +244,14 @@ const basePaginationShape = {
     description: "Search keyword matched against recipe title (case and accent-insensitive)",
     example: "pasta",
   }),
+  sort_by: z.enum(["created_at", "view_count"]).default("created_at").openapi({
+    description: "Field to sort recipes by",
+    example: "created_at",
+  }),
+  sort_order: z.enum(["asc", "desc"]).default("desc").openapi({
+    description: "Sort direction",
+    example: "desc",
+  }),
 }
 
 export const getPublicRecipesQuerySchema = z.object(basePaginationShape)

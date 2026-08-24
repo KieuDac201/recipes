@@ -1,7 +1,8 @@
 import * as RecipeRepository from "../repositories/recipe.repository"
 import { incrementRecipeViewInRedis, isRedisConfigured, redis, REDIS_KEYS } from "../config/redis"
-import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type"
+import { Recipe, RecipeBody, RecipeDetail, RecipeSortBy, RecipeStatus } from "../types/recipe.type"
 import { AppError } from "../utils/AppError"
+import { SortOrder } from "../types"
 
 // Public recipes list cache TTL: 10 minutes (in seconds)
 const PUBLIC_RECIPES_CACHE_TTL = 10 * 60
@@ -30,7 +31,15 @@ const getMyRecipes = async (
 ): Promise<{ recipes: Recipe[]; totalPage: number }> => {
   const offset = (currentPage - 1) * limit
 
-  return await RecipeRepository.findAllRecipes(limit, offset, search, status || "all", authorId)
+  return await RecipeRepository.findAllRecipes({
+    limit,
+    offset,
+    search,
+    status: status || "all",
+    authorId,
+    sortBy: "created_at",
+    sortOrder: "desc",
+  })
 }
 
 const getAdminRecipes = async (
@@ -41,16 +50,33 @@ const getAdminRecipes = async (
   authorId?: number
 ): Promise<{ recipes: Recipe[]; totalPage: number; totalCount: number }> => {
   const offset = (currentPage - 1) * limit
-  return await RecipeRepository.findAllRecipes(limit, offset, search, status, authorId)
+  return await RecipeRepository.findAllRecipes({
+    limit,
+    offset,
+    search,
+    status,
+    authorId,
+    sortBy: "created_at",
+    sortOrder: "desc",
+  })
 }
 
-const getPublicRecipes = async (
-  limit: number,
-  currentPage: number,
+const getPublicRecipes = async ({
+  limit,
+  currentPage,
+  search,
+  sortBy,
+  sortOrder,
+}: {
+  limit: number
+  currentPage: number
   search?: string
-): Promise<{ recipes: Recipe[]; totalPage: number }> => {
+  sortBy: RecipeSortBy
+  sortOrder: SortOrder
+}): Promise<{ recipes: Recipe[]; totalPage: number }> => {
   const normalizedSearch = search ? search.toLowerCase().trim() : ""
-  const cacheKey = `${REDIS_KEYS.RECIPES_PUBLIC_PREFIX}:p=${currentPage}:l=${limit}:s=${normalizedSearch}`
+
+  const cacheKey = `${REDIS_KEYS.RECIPES_PUBLIC_PREFIX}:p=${currentPage}:l=${limit}:s=${normalizedSearch}:sb=${sortBy}:so=${sortOrder}`
 
   // 1. Check Redis Cache first (Cache-Aside pattern)
   if (redis) {
@@ -66,16 +92,21 @@ const getPublicRecipes = async (
 
   // 2. Cache Miss: Query Database
   const offset = (currentPage - 1) * limit
-  const result = await RecipeRepository.findAllRecipes(limit, offset, search, "approved")
+  const result = await RecipeRepository.findAllRecipes({
+    limit,
+    offset,
+    search,
+    status: "approved",
+    sortBy,
+    sortOrder,
+  })
   const responseData = { recipes: result.recipes, totalPage: result.totalPage }
 
   // 3. Populate Redis Cache in background (Fire-and-forget, TTL: 10 minutes)
   if (redis) {
-    redis
-      .set(cacheKey, responseData, { ex: PUBLIC_RECIPES_CACHE_TTL })
-      .catch((error) => {
-        console.error("⚠️ Failed to save public recipes to Redis cache in background:", error)
-      })
+    redis.set(cacheKey, responseData, { ex: PUBLIC_RECIPES_CACHE_TTL }).catch((error) => {
+      console.error("⚠️ Failed to save public recipes to Redis cache in background:", error)
+    })
   }
 
   return responseData
@@ -134,7 +165,6 @@ const increaseViewCount = async (id: number) => {
   // Direct database fallback if Redis is not configured or fails
   await RecipeRepository.increaseRecipeViewCount(id)
 }
-
 
 const RecipeService = {
   getMyRecipes,

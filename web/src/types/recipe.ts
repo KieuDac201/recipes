@@ -14,13 +14,18 @@ export interface PaginationMeta {
   totalCount?: number;
 }
 
+export type SortOrder = "asc" | "desc";
+export type RecipeSortBy = "created_at" | "view_count";
+
 export interface PaginationParams {
   limit?: number;
   page?: number;
   current_page?: number;
   search?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: SortOrder;
+  sort_by?: RecipeSortBy;
+  sort_order?: SortOrder;
 }
 
 export interface ApiResponse<TData = unknown> {

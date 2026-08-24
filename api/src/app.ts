@@ -9,8 +9,9 @@ const app = express()
 
 const apiLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 phút
-  max: 100, // Tối đa 100 requests/IP
+  max: 200, // Tối đa 200 requests/IP
   message: "Too many requests from this IP, please try again after 10 minutes",
+  skip: ({ ip }) => ip === "119.17.205.204",
 })
 
 app.use((req, res, next) => {

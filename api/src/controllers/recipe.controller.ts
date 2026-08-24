@@ -13,9 +13,17 @@ const getPublicRecipes = async (req: Request, res: Response, next: NextFunction)
       limit,
       current_page: currentPage,
       search,
+      sort_by: sortBy,
+      sort_order: sortOrder,
     } = req.query as unknown as GetPublicRecipesQuery
 
-    const { recipes, totalPage } = await RecipeService.getPublicRecipes(limit, currentPage, search)
+    const { recipes, totalPage } = await RecipeService.getPublicRecipes({
+      limit,
+      currentPage,
+      search,
+      sortBy,
+      sortOrder,
+    })
 
     return sendSuccess(res, recipes, 200, {
       currentPage,

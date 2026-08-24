@@ -17,6 +17,7 @@ export function useAdminRecipesManagement() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeStatus, setActiveStatus] = useState<RecipeStatus>("all");
@@ -104,6 +105,7 @@ export function useAdminRecipesManagement() {
     if (nextPage > (pagination.totalPage || 1)) return;
 
     setIsLoadingMore(true);
+    setLoadMoreError(false);
     try {
       const res = await getAdminRecipes({
         limit: ADMIN_RECIPE_PAGE_SIZE,
@@ -115,6 +117,7 @@ export function useAdminRecipesManagement() {
       setPagination(res.pagination || null);
     } catch (err: unknown) {
       console.error("[useAdminRecipesManagement] Error loading more recipes:", err);
+      setLoadMoreError(true);
     } finally {
       setIsLoadingMore(false);
     }
@@ -128,6 +131,7 @@ export function useAdminRecipesManagement() {
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
     isLoading: isLoading || isLoadingMore,
+    hasError: loadMoreError,
     onLoadMore: handleLoadMore,
   });
 

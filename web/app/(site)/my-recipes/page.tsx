@@ -28,6 +28,7 @@ export default function MyRecipesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function MyRecipesPage() {
     if (nextPage > (pagination.totalPage || 1)) return;
 
     setIsLoadingMore(true);
+    setLoadMoreError(false);
     try {
       const res = await getMyRecipes({
         status: activeTab,
@@ -84,6 +86,7 @@ export default function MyRecipesPage() {
       setPagination(res.pagination || null);
     } catch (err: unknown) {
       console.error("[MyRecipesPage] Error loading more recipes:", err);
+      setLoadMoreError(true);
     } finally {
       setIsLoadingMore(false);
     }
@@ -97,6 +100,7 @@ export default function MyRecipesPage() {
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
     isLoading: isLoading || isLoadingMore,
+    hasError: loadMoreError,
     onLoadMore: handleLoadMore,
   });
 

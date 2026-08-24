@@ -19,6 +19,13 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   const isHomeActive = pathname === "/";
   const isMyRecipesActive = pathname === "/my-recipes" || pathname.startsWith("/my-recipes/");
   const isAdminActive = pathname === "/admin" || pathname.startsWith("/admin/");
@@ -35,6 +42,7 @@ export default function Navbar() {
         <div className="flex items-center gap-8">
           <Link
             href="/"
+            onClick={handleHomeClick}
             className="text-2xl font-black tracking-tight text-[#ae2f34] font-[var(--font-headline)]"
           >
             Bếp Phương
@@ -42,6 +50,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-5 ml-4">
             <Link
               href="/"
+              onClick={handleHomeClick}
               className={linkClass(isHomeActive)}
             >
               Khám Phá

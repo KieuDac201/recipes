@@ -1,13 +1,24 @@
 import { pool, query } from "../config/db"
-import { Recipe, RecipeBody, RecipeDetail, RecipeStatus } from "../types/recipe.type"
+import { SortOrder } from "../types"
+import { Recipe, RecipeBody, RecipeDetail, RecipeSortBy, RecipeStatus } from "../types/recipe.type"
 
-const findAllRecipes = async (
-  limit: number,
-  offset: number,
-  search?: string,
-  status?: RecipeStatus,
+const findAllRecipes = async ({
+  limit,
+  offset,
+  search,
+  status,
+  authorId,
+  sortBy,
+  sortOrder,
+}: {
+  limit: number
+  offset: number
+  search?: string
+  status?: RecipeStatus
   authorId?: number
-): Promise<{ recipes: Recipe[]; totalPage: number; totalCount: number }> => {
+  sortBy: RecipeSortBy
+  sortOrder: SortOrder
+}): Promise<{ recipes: Recipe[]; totalPage: number; totalCount: number }> => {
   const conditions = []
   const params = []
   if (search) {
@@ -28,7 +39,7 @@ const findAllRecipes = async (
   const dataSQL = `
         SELECT * FROM recipes 
         ${whereClause}
-        ORDER BY created_at DESC
+        ORDER BY ${sortBy} ${sortOrder}, id ${sortOrder}
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `
   /*sql*/
@@ -332,4 +343,3 @@ export {
   increaseRecipeViewCount,
   batchIncrementRecipeViewCounts,
 }
-

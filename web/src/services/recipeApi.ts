@@ -39,6 +39,8 @@ export const recipeService = {
         limit: params?.limit,
         current_page: params?.current_page,
         search: params?.search?.trim() || undefined,
+        sort_by: params?.sort_by || (params?.sortBy as any) || undefined,
+        sort_order: params?.sort_order || params?.sortOrder || undefined,
       },
     });
   },
@@ -60,6 +62,8 @@ export const recipeService = {
         current_page: params?.current_page,
         search: params?.search?.trim() || undefined,
         status: params?.status || undefined,
+        sort_by: params?.sort_by || (params?.sortBy as any) || undefined,
+        sort_order: params?.sort_order || params?.sortOrder || undefined,
       },
     });
   },
@@ -74,6 +78,8 @@ export const recipeService = {
         current_page: params?.current_page,
         search: params?.search?.trim() || undefined,
         status: params?.status || undefined,
+        sort_by: params?.sort_by || (params?.sortBy as any) || undefined,
+        sort_order: params?.sort_order || params?.sortOrder || undefined,
       },
     });
   },

@@ -8,6 +8,10 @@ import { PUBLIC_RECIPE_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from "@/src/config/consta
 import RecipeCard from "./RecipeCard";
 import RecipeSkeletonCard from "./RecipeSkeletonCard";
 import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
+import RecipeSortSelect, {
+  RecipeSortOption,
+  RECIPE_SORT_OPTIONS,
+} from "./RecipeSortSelect";
 
 export interface RecipeListingProps {
   initialRecipes?: Recipe[];
@@ -23,35 +27,45 @@ export default function RecipeListing({
     initialPagination
   );
   const [search, setSearch] = useState("");
+  const [sortOption, setSortOption] = useState<RecipeSortOption>(
+    RECIPE_SORT_OPTIONS[0]
+  );
   const [isLoading, setIsLoading] = useState(initialRecipes.length === 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   
   const isInitialMount = useRef(true);
   const activeSearchRef = useRef("");
+  const activeSortRef = useRef<RecipeSortOption>(RECIPE_SORT_OPTIONS[0]);
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch initial page of recipes with optional search term
-  const fetchInitialRecipes = useCallback(async (searchTerm: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await getRecipes({
-        search: searchTerm || undefined,
-        current_page: 1,
-        limit: PUBLIC_RECIPE_PAGE_SIZE,
-      });
-      setRecipes(res.data || []);
-      setPagination(res.pagination || null);
-    } catch (err: unknown) {
-      console.error("Failed to load recipes:", err);
-      setError(
-        "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Fetch initial page of recipes with optional search term and sort option
+  const fetchInitialRecipes = useCallback(
+    async (searchTerm: string, currentSort: RecipeSortOption = activeSortRef.current) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await getRecipes({
+          search: searchTerm || undefined,
+          current_page: 1,
+          limit: PUBLIC_RECIPE_PAGE_SIZE,
+          sort_by: currentSort.sortBy,
+          sort_order: currentSort.sortOrder,
+        });
+        setRecipes(res.data || []);
+        setPagination(res.pagination || null);
+      } catch (err: unknown) {
+        console.error("Failed to load recipes:", err);
+        setError(
+          "Không thể tải danh sách công thức. Vui lòng kiểm tra lại kết nối."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -62,8 +76,11 @@ export default function RecipeListing({
     };
   }, []);
 
-  // Initial fetch if server didn't provide initialRecipes
+  // Initial mount: always scroll to top & fetch if server didn't provide initialRecipes
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
     if (isInitialMount.current) {
       isInitialMount.current = false;
       if (initialRecipes.length === 0) {
@@ -96,6 +113,12 @@ export default function RecipeListing({
     fetchInitialRecipes("");
   };
 
+  const handleSortChange = (newOption: RecipeSortOption) => {
+    setSortOption(newOption);
+    activeSortRef.current = newOption;
+    fetchInitialRecipes(activeSearchRef.current, newOption);
+  };
+
   // Load more handler
   const handleLoadMore = useCallback(async () => {
     if (!pagination || isLoadingMore) return;
@@ -103,16 +126,20 @@ export default function RecipeListing({
     if (nextPage > (pagination.totalPage || 1)) return;
 
     setIsLoadingMore(true);
+    setLoadMoreError(false);
     try {
       const res = await getRecipes({
         search: activeSearchRef.current || undefined,
         current_page: nextPage,
         limit: PUBLIC_RECIPE_PAGE_SIZE,
+        sort_by: activeSortRef.current.sortBy,
+        sort_order: activeSortRef.current.sortOrder,
       });
       setRecipes((prev) => [...prev, ...(res.data || [])]);
       setPagination(res.pagination || null);
     } catch (err: unknown) {
       console.error("Failed to load more recipes:", err);
+      setLoadMoreError(true);
     } finally {
       setIsLoadingMore(false);
     }
@@ -126,6 +153,7 @@ export default function RecipeListing({
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
     isLoading: isLoading || isLoadingMore,
+    hasError: loadMoreError,
     onLoadMore: handleLoadMore,
   });
 
@@ -214,6 +242,14 @@ export default function RecipeListing({
       {/* Recipe Grid */}
       {!isLoading && !error && recipes.length > 0 && (
         <section aria-label="Danh sách công thức nấu ăn">
+          {/* Top Sort Controls: Left Aligned */}
+          <div className="flex items-center justify-between mb-6">
+            <RecipeSortSelect
+              value={sortOption}
+              onChange={handleSortChange}
+            />
+          </div>
+
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
             {recipes.map((recipe) => (
               <li key={recipe.id} className="h-full flex flex-col">
