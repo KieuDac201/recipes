@@ -8,6 +8,9 @@ import rateLimit from "express-rate-limit"
 
 const app = express()
 
+// Trust proxy (Render / reverse proxy support for real client IPs in rate limit & logs)
+app.set("trust proxy", 1)
+
 // HTTP request logging to stdout (Render console / terminal)
 app.use(
   morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
