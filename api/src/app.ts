@@ -8,8 +8,25 @@ import rateLimit from "express-rate-limit"
 
 const app = express()
 
-// Trust proxy (Render / reverse proxy support for real client IPs in rate limit & logs)
-app.set("trust proxy", 1)
+// Trust proxy (trust all proxy hops on Render/Cloudflare so real client IP is resolved)
+app.set("trust proxy", true)
+
+// Custom Morgan token to extract the real public client IP from headers
+// morgan.token("real-ip", (req) => {
+//   const forwarded = req.headers["x-forwarded-for"]
+//   if (typeof forwarded === "string") {
+//     return forwarded.split(",")[0].trim()
+//   }
+//   return (
+//     (req.headers["cf-connecting-ip"] as string) ||
+//     req.ip ||
+//     req.socket?.remoteAddress ||
+//     "-"
+//   )
+// })
+
+// const prodFormat =
+//   ':real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" - :response-time ms'
 
 // HTTP request logging to stdout (Render console / terminal)
 app.use(
