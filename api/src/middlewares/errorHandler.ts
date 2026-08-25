@@ -12,6 +12,11 @@ export const errorHandler = (
   const message = err.message || "Internal Server Error"
   const details = err instanceof AppError ? err.details : undefined
 
+  // Log unhandled server errors (5xx) with stack traces to Render console / stdout
+  if (statusCode >= 500) {
+    console.error(`[${new Date().toISOString()}] [ERROR] ${req.method} ${req.originalUrl}:`, err)
+  }
+
   res.status(statusCode).json({
     success: false,
     error: message,

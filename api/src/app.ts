@@ -1,4 +1,5 @@
 import express from "express"
+import morgan from "morgan"
 import swaggerUi from "swagger-ui-express"
 import router from "./routes"
 import { errorHandler } from "./middlewares/errorHandler"
@@ -6,6 +7,14 @@ import { getOpenApiDocumentation } from "./docs/openapi"
 import rateLimit from "express-rate-limit"
 
 const app = express()
+
+// HTTP request logging to stdout (Render console / terminal)
+app.use(
+  morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
+    // Skip logging wake-up pings to prevent cluttering console logs
+    skip: (req) => req.url === "/wake-up",
+  })
+)
 
 const apiLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 phút
