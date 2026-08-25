@@ -44,6 +44,24 @@ app.get("/wake-up", (req, res) => {
   res.json({ message: "I'm alive" })
 })
 
+// ⚠️ TEMPORARY: Debug endpoint to inspect all IP-related headers on Render
+// DELETE this after identifying the correct header
+app.get("/debug-ip", (req, res) => {
+  res.json({
+    "req.ip": req.ip,
+    "req.ips": req.ips,
+    "req.socket.remoteAddress": req.socket?.remoteAddress,
+    "x-forwarded-for": req.headers["x-forwarded-for"],
+    "x-real-ip": req.headers["x-real-ip"],
+    "cf-connecting-ip": req.headers["cf-connecting-ip"],
+    "true-client-ip": req.headers["true-client-ip"],
+    "x-client-ip": req.headers["x-client-ip"],
+    "x-forwarded-proto": req.headers["x-forwarded-proto"],
+    "forwarded": req.headers["forwarded"],
+    allHeaders: req.headers,
+  })
+})
+
 // Main API routes
 app.use("/api", router)
 
