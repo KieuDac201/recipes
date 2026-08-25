@@ -24,7 +24,7 @@ const colorizeStatus = (status: number): string => {
 morgan.format("render-colorful", (tokens, req: Request, res: Response) => {
   const status = Number(tokens.status(req, res)) || 0
   const timestamp = `${colors.dim}[${new Date().toISOString()}]${colors.reset}`
-  const ip = `${colors.blue}${req.ip || "-"}${colors.reset}`
+  const ip = `${colors.blue}${tokens["remote-addr"](req, res) || req.ip || "-"}${colors.reset}`
   const method = `${colors.magenta}${tokens.method(req, res)}${colors.reset}`
   const url = tokens.url(req, res)
   const statusFormatted = colorizeStatus(status)
