@@ -20,11 +20,29 @@ const colorizeStatus = (status: number): string => {
   return `${status}`
 }
 
+/**
+ * Extracts the real client public IP from proxy headers (Cloudflare / Render / ISP hops)
+ */
+export const getClientIp = (req: Request): string => {
+  const forwarded = req.headers["x-forwarded-for"]
+  if (typeof forwarded === "string") {
+    // The leftmost IP in X-Forwarded-For is the original client public IP
+    return forwarded.split(",")[0].trim()
+  }
+  return (
+    (req.headers["cf-connecting-ip"] as string) ||
+    (req.headers["x-real-ip"] as string) ||
+    req.ip ||
+    req.socket?.remoteAddress ||
+    "-"
+  )
+}
+
 // Register custom colorful format with Morgan
 morgan.format("render-colorful", (tokens, req: Request, res: Response) => {
   const status = Number(tokens.status(req, res)) || 0
   const timestamp = `${colors.dim}[${new Date().toISOString()}]${colors.reset}`
-  const ip = `${colors.blue}${tokens["remote-addr"](req, res) || req.ip || "-"}${colors.reset}`
+  const ip = `${colors.blue}${getClientIp(req)}${colors.reset}`
   const method = `${colors.magenta}${tokens.method(req, res)}${colors.reset}`
   const url = tokens.url(req, res)
   const statusFormatted = colorizeStatus(status)

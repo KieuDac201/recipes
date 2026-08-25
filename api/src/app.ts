@@ -3,7 +3,7 @@ import swaggerUi from "swagger-ui-express"
 import router from "./routes"
 import { errorHandler } from "./middlewares/errorHandler"
 import { getOpenApiDocumentation } from "./docs/openapi"
-import { httpLogger } from "./utils/logger"
+import { httpLogger, getClientIp } from "./utils/logger"
 import rateLimit from "express-rate-limit"
 
 const app = express()
@@ -18,7 +18,7 @@ const apiLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 phút
   max: 200, // Tối đa 200 requests/IP
   message: "Too many requests from this IP, please try again after 10 minutes",
-  skip: ({ ip }) => ip === "119.17.205.204",
+  skip: (req) => getClientIp(req) === "119.17.205.204",
 })
 
 app.use((req, res, next) => {
