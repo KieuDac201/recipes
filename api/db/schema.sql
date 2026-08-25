@@ -54,12 +54,20 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role user_role DEFAULT 'user',
+    is_email_verified BOOLEAN DEFAULT FALSE,
+    email_verification_token VARCHAR(255) DEFAULT NULL,
+    email_verification_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     reset_otp_hash VARCHAR(255) DEFAULT NULL,
     reset_otp_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     reset_otp_attempts INT DEFAULT 0,
     reset_otp_locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-)
+);
+
+-- Migration for existing database instances:
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255) DEFAULT NULL;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
 
 CREATE EXTENSION IF NOT EXISTS unaccent;
 

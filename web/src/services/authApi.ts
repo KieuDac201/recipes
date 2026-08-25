@@ -102,6 +102,48 @@ export const authService = {
   },
 
   /**
+   * Verify email with magic link token
+   */
+  verifyEmail: async (token: string): Promise<{ user: UserProfile; token: string }> => {
+    try {
+      const response = await apiClient.post<any>("/users/verify-email", { token });
+      const sessionToken = response.token || response.user?.token;
+      const user = response.user?.user || response.user || {};
+
+      if (typeof window !== "undefined") {
+        if (sessionToken) {
+          localStorage.setItem(AUTH_TOKEN_KEY, sessionToken);
+        }
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      }
+
+      return { user, token: sessionToken };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Xác thực email thất bại hoặc liên kết đã hết hạn.");
+    }
+  },
+
+  /**
+   * Resend verification email
+   */
+  resendVerification: async (email: string): Promise<MessageResponse> => {
+    try {
+      const response = await apiClient.post<MessageResponse>("/users/resend-verification", {
+        email,
+      });
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Không thể gửi lại email xác thực. Vui lòng thử lại.");
+    }
+  },
+
+  /**
    * Log out current user
    */
   logout: (): void => {
@@ -129,7 +171,7 @@ export const authService = {
    */
   isAuthenticated: (): boolean => {
     if (typeof window === "undefined") return false;
-    return !!localStorage.getItem(AUTH_TOKEN_KEY);
+    return !!localStorage.getItem(AUTH_USER_KEY) || !!localStorage.getItem(AUTH_TOKEN_KEY);
   },
 };
 

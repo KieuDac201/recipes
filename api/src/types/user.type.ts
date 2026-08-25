@@ -8,10 +8,14 @@ interface User {
   email: string
   role: string
   password_hash: string
+  is_email_verified: boolean
+  email_verification_token: string | null
+  email_verification_expires_at: string | null
   reset_otp_locked_until: string | null
   reset_otp_attempts: number
   reset_otp_hash: string | null
   reset_otp_expires_at: string | null
+  created_at: string
 }
 
 interface ForgotPasswordPayload {
@@ -24,4 +28,19 @@ interface ResetPasswordPayload {
   password: string
 }
 
-export { UserPayload, User, ForgotPasswordPayload, ResetPasswordPayload }
+interface VerifyEmailPayload {
+  token: string
+}
+
+interface ResendVerificationPayload {
+  email: string
+}
+
+export {
+  UserPayload,
+  User,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+  VerifyEmailPayload,
+  ResendVerificationPayload,
+}

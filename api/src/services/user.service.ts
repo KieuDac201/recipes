@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import sendMail from "./email.service"
 import { generateOtpEmailHtml } from "../templates/otpEmail.template"
+import { generateVerificationEmailHtml } from "../templates/verifyEmail.template"
 
 const SECRET_KEY = process.env.JWT_SECRET
 
@@ -13,11 +14,36 @@ const createUser = async (user: UserPayload) => {
   const existUser = await userRepository.findUserByEmail(user.email)
 
   if (existUser) {
-    throw new AppError("User already exists", 400)
+    throw new AppError("Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.", 400)
   }
 
   const hashedPassword = await hashPassword(user.password)
-  const newUser = await userRepository.createUser({ email: user.email, password: hashedPassword })
+
+  // Generate secure 32-byte hex token for magic link email verification
+  const rawVerificationToken = crypto.randomBytes(32).toString("hex")
+  const hashedVerificationToken = crypto
+    .createHash("sha256")
+    .update(rawVerificationToken)
+    .digest("hex")
+  const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours validity
+
+  const newUser = await userRepository.createUser({
+    email: user.email,
+    passwordHash: hashedPassword,
+    verificationTokenHash: hashedVerificationToken,
+    verificationExpiresAt,
+  })
+
+  // Send activation magic link email
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:8888"
+  const verificationUrl = `${clientUrl}/verify-email?token=${rawVerificationToken}&email=${encodeURIComponent(user.email)}`
+  const emailHtml = generateVerificationEmailHtml(verificationUrl)
+
+  try {
+    await sendMail(user.email, "Kích Hoạt Tài Khoản — Bếp Phương", emailHtml)
+  } catch (error) {
+    console.error("⚠️ Failed to send verification email during registration:", error)
+  }
 
   return newUser
 }
@@ -26,13 +52,21 @@ const loginUser = async (user: UserPayload) => {
   const existUser = await userRepository.findUserByEmail(user.email)
 
   if (!existUser) {
-    throw new AppError("Email or password is not correct", 401)
+    throw new AppError("Email hoặc mật khẩu không chính xác.", 401)
   }
 
   const isPasswordValid = await comparePassword(user.password, existUser.password_hash)
 
   if (!isPasswordValid) {
-    throw new AppError("Email or password is not correct", 401)
+    throw new AppError("Email hoặc mật khẩu không chính xác.", 401)
+  }
+
+  // Enforce email verification check
+  if (!existUser.is_email_verified) {
+    throw new AppError(
+      "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email của bạn để xác thực tài khoản.",
+      403
+    )
   }
 
   const token = jwt.sign(
@@ -51,6 +85,87 @@ const loginUser = async (user: UserPayload) => {
   }
 }
 
+const verifyEmail = async (token: string) => {
+  if (!token || typeof token !== "string") {
+    throw new AppError("Mã kích hoạt không hợp lệ.", 400)
+  }
+
+  const hashedToken = crypto.createHash("sha256").update(token.trim()).digest("hex")
+  const existUser = await userRepository.findUserByVerificationToken(hashedToken)
+
+  if (!existUser) {
+    throw new AppError(
+      "Đường dẫn kích hoạt không hợp lệ hoặc tài khoản đã được kích hoạt trước đó.",
+      400
+    )
+  }
+
+  const now = new Date()
+  if (
+    existUser.email_verification_expires_at &&
+    new Date(existUser.email_verification_expires_at) < now
+  ) {
+    throw new AppError(
+      "Đường dẫn kích hoạt đã hết hạn (quá 24h). Vui lòng yêu cầu gửi lại email xác thực.",
+      400
+    )
+  }
+
+  const verifiedUser = await userRepository.verifyUserEmail(existUser.id)
+
+  // Automatically generate JWT session token upon successful email verification
+  const sessionToken = jwt.sign(
+    { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role },
+    SECRET_KEY!,
+    { expiresIn: "1d" }
+  )
+
+  return {
+    user: {
+      id: verifiedUser.id,
+      email: verifiedUser.email,
+      role: verifiedUser.role,
+    },
+    token: sessionToken,
+  }
+}
+
+const resendVerificationEmail = async (email?: string) => {
+  if (!email) {
+    throw new AppError("Email là bắt buộc.", 400)
+  }
+
+  const existUser = await userRepository.findUserByEmail(email)
+
+  if (!existUser) {
+    throw new AppError("Không tìm thấy tài khoản với email này.", 404)
+  }
+
+  if (existUser.is_email_verified) {
+    throw new AppError("Tài khoản này đã được kích hoạt trước đó. Vui lòng đăng nhập.", 400)
+  }
+
+  // Generate a new verification token
+  const rawVerificationToken = crypto.randomBytes(32).toString("hex")
+  const hashedVerificationToken = crypto
+    .createHash("sha256")
+    .update(rawVerificationToken)
+    .digest("hex")
+  const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  await userRepository.saveEmailVerificationToken(
+    email,
+    hashedVerificationToken,
+    verificationExpiresAt
+  )
+
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:8888"
+  const verificationUrl = `${clientUrl}/verify-email?token=${rawVerificationToken}&email=${encodeURIComponent(email)}`
+  const emailHtml = generateVerificationEmailHtml(verificationUrl)
+
+  await sendMail(email, "Kích Hoạt Tài Khoản — Bếp Phương", emailHtml)
+}
+
 const forgotPassword = async (email?: string) => {
   if (!email) {
     throw new AppError("Email is required", 400)
@@ -58,7 +173,7 @@ const forgotPassword = async (email?: string) => {
   const existUser = await userRepository.findUserByEmail(email)
 
   if (!existUser) {
-    throw new AppError("Email not found", 404)
+    return
   }
   // check lock until
   const now = new Date()
@@ -85,40 +200,46 @@ const resetPassword = async (email: string, otp: string, password: string) => {
   const existUser = await userRepository.findUserByEmail(email)
 
   if (!existUser) {
-    throw new AppError("Email not found", 404)
+    throw new AppError("Invalid or expired reset code.", 400)
   }
-  // check reset_otp_attempts >= 5
-  if (existUser.reset_otp_attempts >= 5) {
-    const oneDay = 24 * 60 * 60 * 1000
 
-    await userRepository.lockResetOtp(email, new Date(Date.now() + oneDay))
+  // 1. Check if account is currently locked out
+  const now = new Date()
+  if (existUser.reset_otp_locked_until && new Date(existUser.reset_otp_locked_until) > now) {
     throw new AppError(
       "You have exceeded the maximum number of reset attempts. Please try again later.",
       429
     )
   }
-  const now = new Date()
-  // check reset_otp_expires_at
+
+  // 2. Check if OTP is expired
   if (existUser.reset_otp_expires_at && new Date(existUser.reset_otp_expires_at) < now) {
     throw new AppError("Invalid or expired reset code.", 400)
   }
 
-  // verify otp
+  // 3. Verify OTP
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex")
   if (hashedOtp !== existUser.reset_otp_hash) {
-    await userRepository.incrementResetAttempts(email)
+    const updated = await userRepository.incrementResetAttempts(email)
+    if (updated && updated.reset_otp_attempts >= 5) {
+      throw new AppError(
+        "You have exceeded the maximum number of reset attempts. Please try again later.",
+        429
+      )
+    }
     throw new AppError("Invalid or expired reset code.", 400)
   }
 
-  // reset password
+  // 4. OTP is valid -> Reset password and clear OTP/attempts
   const hashedPassword = await hashPassword(password)
   await userRepository.updatePassword(email, hashedPassword)
-  // clear otp
 }
 
 export const userService = {
   createUser,
   loginUser,
+  verifyEmail,
+  resendVerificationEmail,
   forgotPassword,
   resetPassword,
 }

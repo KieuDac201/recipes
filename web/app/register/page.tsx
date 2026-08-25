@@ -41,10 +41,10 @@ export default function RegisterPage() {
         email: validationResult.data.email,
         password: validationResult.data.password,
       });
-      setSuccessMessage("Đăng ký tài khoản thành công! Đang chuyển hướng đến trang đăng nhập...");
+      setSuccessMessage("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản...");
       setTimeout(() => {
-        router.push(`/login?registered=true&email=${encodeURIComponent(email.trim())}`);
-      }, 1200);
+        router.push(`/verify-email?registered=true&email=${encodeURIComponent(email.trim())}`);
+      }, 1500);
     } catch (err: any) {
       setErrorMessage(
         err?.message || "Đăng ký không thành công. Email này có thể đã được sử dụng."

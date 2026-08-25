@@ -5,7 +5,16 @@ import { User } from "../types/user.type"
 
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
-  const accessToken = authHeader ? authHeader.split(" ")[1] : null
+  let accessToken = authHeader ? authHeader.split(" ")[1] : null
+
+  if (!accessToken && req.headers.cookie) {
+    const cookies = req.headers.cookie.split(";").reduce((acc: Record<string, string>, item) => {
+      const [key, ...vals] = item.trim().split("=")
+      if (key) acc[key] = decodeURIComponent(vals.join("="))
+      return acc
+    }, {})
+    accessToken = cookies.token || null
+  }
 
   if (!accessToken) {
     return next(new AppError("Unauthorized: Vui lòng đăng nhập để tiếp tục.", 401))

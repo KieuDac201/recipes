@@ -29,6 +29,14 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface VerifyEmailPayload {
+  token: string;
+}
+
+export interface ResendVerificationPayload {
+  email: string;
+}
+
 export interface AuthResponse {
   message?: string;
   user?: {

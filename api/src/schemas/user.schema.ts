@@ -46,6 +46,30 @@ export const UserProfileSchema = registry.register(
   })
 )
 
+export const VerifyEmailSchema = registry.register(
+  "VerifyEmail",
+  z.object({
+    token: z.string().min(1, "Verification token is required").openapi({
+      example: "a8f5c9e2b1d4...",
+      description: "32-byte hexadecimal verification token from magic link",
+    }),
+  })
+)
+export const verifyEmailSchema = VerifyEmailSchema
+export type VerifyEmailSchemaType = z.infer<typeof VerifyEmailSchema>
+
+export const ResendVerificationSchema = registry.register(
+  "ResendVerification",
+  z.object({
+    email: z.string().email("Invalid email format").openapi({
+      example: "user@example.com",
+      description: "User email address to receive activation link",
+    }),
+  })
+)
+export const resendVerificationSchema = ResendVerificationSchema
+export type ResendVerificationSchemaType = z.infer<typeof ResendVerificationSchema>
+
 export const ForgotPasswordSchema = registry.register(
   "ForgotPassword",
   z.object({
@@ -84,8 +108,29 @@ export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>
 export const CreateUserResponseSchema = registry.register(
   "CreateUserResponse",
   z.object({
-    message: z.string().openapi({ example: "User created successfully" }),
+    message: z.string().openapi({ example: "User created successfully. Please check your email to activate account." }),
     user: UserProfileSchema,
+  })
+)
+
+export const VerifyEmailResponseSchema = registry.register(
+  "VerifyEmailResponse",
+  z.object({
+    message: z.string().openapi({ example: "Email verified successfully" }),
+    user: z.object({
+      user: UserProfileSchema,
+      token: z.string().openapi({
+        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        description: "JWT access token valid for 1 day",
+      }),
+    }),
+  })
+)
+
+export const ResendVerificationResponseSchema = registry.register(
+  "ResendVerificationResponse",
+  z.object({
+    message: z.string().openapi({ example: "Verification email resent successfully" }),
   })
 )
 
@@ -130,7 +175,8 @@ registry.registerPath({
   path: "/users",
   tags: ["Users & Authentication"],
   summary: "Register a new user",
-  description: "Registers a new user account with email and password.",
+  description:
+    "Registers a new user account and sends an activation magic link to the provided email.",
   request: { body: { content: jsonContent(CreateUserSchema) } },
   responses: {
     201: jsonResponse(CreateUserResponseSchema, "User registered successfully"),
@@ -139,23 +185,57 @@ registry.registerPath({
   },
 })
 
-// 2. User Login (POST /users/login)
+// 2. Verify Email Magic Link (POST /users/verify-email)
+registry.registerPath({
+  method: "post",
+  path: "/users/verify-email",
+  tags: ["Users & Authentication"],
+  summary: "Verify email with magic link token",
+  description:
+    "Validates the activation magic link token, marks email as verified, and returns an active JWT session token.",
+  request: { body: { content: jsonContent(VerifyEmailSchema) } },
+  responses: {
+    200: jsonResponse(VerifyEmailResponseSchema, "Email verified successfully"),
+    400: errResponse("Invalid or expired verification token"),
+    500: errResponse("Internal server error"),
+  },
+})
+
+// 3. Resend Verification Email (POST /users/resend-verification)
+registry.registerPath({
+  method: "post",
+  path: "/users/resend-verification",
+  tags: ["Users & Authentication"],
+  summary: "Resend email verification link",
+  description: "Generates a new verification magic link and resends it to the unverified user's email.",
+  request: { body: { content: jsonContent(ResendVerificationSchema) } },
+  responses: {
+    200: jsonResponse(ResendVerificationResponseSchema, "Verification email resent successfully"),
+    400: errResponse("Validation error or account already verified"),
+    404: errResponse("User not found"),
+    500: errResponse("Internal server error"),
+  },
+})
+
+// 4. User Login (POST /users/login)
 registry.registerPath({
   method: "post",
   path: "/users/login",
   tags: ["Users & Authentication"],
   summary: "User login / authentication",
-  description: "Authenticates a user by email and password, returning a signed JWT access token.",
+  description:
+    "Authenticates a user by email and password. Returns 403 Forbidden if email is not verified yet.",
   request: { body: { content: jsonContent(CreateUserSchema) } },
   responses: {
     200: jsonResponse(LoginUserResponseSchema, "User logged in successfully"),
     400: errResponse("Validation error (invalid email format or short password)"),
     401: errResponse("Authentication failed (incorrect email or password)"),
+    403: errResponse("Account is not activated / email not verified"),
     500: errResponse("Internal server error"),
   },
 })
 
-// 3. Forgot Password (POST /users/forgot-password)
+// 5. Forgot Password (POST /users/forgot-password)
 registry.registerPath({
   method: "post",
   path: "/users/forgot-password",
@@ -173,7 +253,7 @@ registry.registerPath({
   },
 })
 
-// 4. Reset Password (POST /users/reset-password)
+// 6. Reset Password (POST /users/reset-password)
 registry.registerPath({
   method: "post",
   path: "/users/reset-password",

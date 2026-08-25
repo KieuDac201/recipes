@@ -1,25 +1,28 @@
-import resend from "../config/email"
+import transporter from "../config/email"
 import { AppError } from "../utils/AppError"
 
 const sendMail = async (email: string, subject: string, html: string) => {
+  const fromUser =
+    process.env.EMAIL_FROM || process.env.GMAIL_USER || process.env.SMTP_USER || "noreply@gmail.com"
+  const fromName = "Bếp Phương"
+  const from = `"${fromName}" <${fromUser}>`
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_EMAIL_FROM || "onboarding@resend.dev",
+    const info = await transporter.sendMail({
+      from,
       to: email,
-      subject: subject,
-      html: html,
+      subject,
+      html,
     })
 
-    if (error) {
-      console.error("Resend API error:", error)
-      throw new AppError(`Failed to send email: ${error.message}`, 500)
-    }
-
-    return data
-  } catch (error) {
-    console.error("Error sending email:", error)
+    return info
+  } catch (error: any) {
+    console.error(
+      `[${new Date().toISOString()}] [EMAIL] ❌ Error sending email to ${email}:`,
+      error
+    )
     if (error instanceof AppError) throw error
-    throw new AppError("Error sending email", 500)
+    throw new AppError(`Error sending email: ${error.message || "Failed to send"}`, 500)
   }
 }
 
