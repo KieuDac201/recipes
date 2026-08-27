@@ -129,11 +129,22 @@ export const recipeService = {
   },
 
   /**
-   * Delete a recipe by ID
+   * Delete a recipe by ID (Soft Delete)
    */
   delete: async (id: string | number): Promise<Recipe> => {
     const response = await apiClient.delete<CreateRecipeResponse>(
       `/recipes/${encodeURIComponent(id)}`
+    );
+    triggerOnDemandRevalidation(response.data?.slug || id);
+    return response.data;
+  },
+
+  /**
+   * Restore a soft-deleted recipe by ID
+   */
+  restore: async (id: string | number): Promise<Recipe> => {
+    const response = await apiClient.patch<CreateRecipeResponse>(
+      `/recipes/${encodeURIComponent(id)}/restore`
     );
     triggerOnDemandRevalidation(response.data?.slug || id);
     return response.data;
@@ -175,6 +186,7 @@ export const getRecipeByIdOrSlug = recipeService.getByIdOrSlug;
 export const createRecipe = recipeService.create;
 export const updateRecipe = recipeService.update;
 export const deleteRecipe = recipeService.delete;
+export const restoreRecipe = recipeService.restore;
 export const updateRecipeStatus = recipeService.updateStatus;
 export const increaseRecipeViewCount = recipeService.increaseViewCount;
 

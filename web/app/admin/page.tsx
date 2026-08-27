@@ -6,6 +6,7 @@ import { useAdminRecipesManagement } from "@/src/hooks/useAdminRecipesManagement
 import ApproveRecipeModal from "./components/ApproveRecipeModal";
 import RejectRecipeModal from "./components/RejectRecipeModal";
 import DeleteRecipeModal from "./components/DeleteRecipeModal";
+import RestoreRecipeModal from "./components/RestoreRecipeModal";
 import AdminRecipeRow from "./components/AdminRecipeRow";
 import AdminEmptyState from "./components/AdminEmptyState";
 import AdminToast from "./components/AdminToast";
@@ -33,6 +34,10 @@ export default function AdminDashboardPage() {
     recipeToDelete,
     setRecipeToDelete,
     isDeleting,
+    recipeToRestore,
+    setRecipeToRestore,
+    isRestoring,
+    handleConfirmRestore,
     recipeToApprove,
     setRecipeToApprove,
     isApproving,
@@ -253,6 +258,7 @@ export default function AdminDashboardPage() {
                   onApprove={(r) => setRecipeToApprove(r)}
                   onReject={(r) => openRejectModal(r)}
                   onDelete={(r) => setRecipeToDelete(r)}
+                  onRestore={(r) => setRecipeToRestore(r)}
                 />
               ))}
 
@@ -294,6 +300,13 @@ export default function AdminDashboardPage() {
         isLoading={isDeleting}
         onClose={() => setRecipeToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <RestoreRecipeModal
+        recipe={recipeToRestore}
+        isLoading={isRestoring}
+        onClose={() => setRecipeToRestore(null)}
+        onConfirm={handleConfirmRestore}
       />
     </main>
   );

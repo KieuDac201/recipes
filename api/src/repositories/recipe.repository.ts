@@ -11,6 +11,7 @@ const findAllRecipes = async ({
   sortBy,
   sortOrder,
   categories,
+  includeDeleted,
 }: {
   limit: number
   offset: number
@@ -20,6 +21,7 @@ const findAllRecipes = async ({
   categories?: string[]
   sortBy: RecipeSortBy
   sortOrder: SortOrder
+  includeDeleted?: boolean
 }): Promise<{ recipes: Recipe[]; totalPage: number; totalCount: number }> => {
   const conditions = []
   const params = []
@@ -33,6 +35,7 @@ const findAllRecipes = async ({
     )
     params.push(categories)
   }
+
   if (search) {
     conditions.push(`unaccent(LOWER(title)) LIKE unaccent(LOWER($${conditions.length + 1}))`)
     params.push(`%${search}%`)
@@ -45,6 +48,9 @@ const findAllRecipes = async ({
   if (authorId) {
     conditions.push(`author_id = $${conditions.length + 1}`)
     params.push(authorId)
+  }
+  if (!includeDeleted) {
+    conditions.push(`deleted_at IS NULL`)
   }
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
   /*sql*/
@@ -265,7 +271,10 @@ const updateRecipe = async (
 const deleteRecipe = async (id: string): Promise<Recipe> => {
   /*sql*/
   const deleteSql = `
-        DELETE FROM recipes WHERE id = $1 RETURNING *
+        UPDATE recipes
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING *
     `
   const result = await query(deleteSql, [id])
 
@@ -343,6 +352,18 @@ const batchIncrementRecipeViewCounts = async (
   }
 }
 
+const restoreRecipe = async (id: string | number): Promise<Recipe> => {
+  /*sql*/
+  const restoreSql = `
+        UPDATE recipes
+        SET deleted_at = NULL
+        WHERE id = $1
+        RETURNING *
+    `
+  const result = await query(restoreSql, [id])
+  return result.rows[0]
+}
+
 export {
   findAllRecipes,
   findRecipeById,
@@ -350,6 +371,7 @@ export {
   getAllUsedImageUrls,
   isImageUsedInRecipe,
   deleteRecipe,
+  restoreRecipe,
   updateRecipe,
   updateRecipeStatus,
   increaseRecipeViewCount,

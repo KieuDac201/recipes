@@ -129,6 +129,16 @@ const deleteRecipe = async (req: Request, res: Response, next: NextFunction) => 
   }
 }
 
+const restoreRecipe = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params as { id: string }
+    const recipe = await RecipeService.restoreRecipe(id)
+    return sendSuccess(res, recipe, 200)
+  } catch (error) {
+    next(error)
+  }
+}
+
 const updateRecipeStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, rejection_reason } = req.body
@@ -157,6 +167,7 @@ const RecipeController = {
   getRecipe,
   createRecipe,
   deleteRecipe,
+  restoreRecipe,
   updateRecipe,
   updateRecipeStatus,
   increaseViewCount,

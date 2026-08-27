@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS recipes (
     author_id INT REFERENCES users(id) ON DELETE SET NULL,
     status recipe_status DEFAULT 'pending',
     rejection_reason TEXT DEFAULT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_recipes_deleted_at ON recipes (deleted_at) WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_recipes_status
 ON recipes(status) WHERE status = 'approved';

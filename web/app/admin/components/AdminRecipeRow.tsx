@@ -9,6 +9,7 @@ interface AdminRecipeRowProps {
   onApprove: (recipe: Recipe) => void;
   onReject: (recipe: Recipe) => void;
   onDelete: (recipe: Recipe) => void;
+  onRestore: (recipe: Recipe) => void;
 }
 
 export default function AdminRecipeRow({
@@ -16,6 +17,7 @@ export default function AdminRecipeRow({
   onApprove,
   onReject,
   onDelete,
+  onRestore,
 }: AdminRecipeRowProps) {
   const formatDate = (dateInput: string | Date | undefined) => {
     if (!dateInput) return "Vừa tạo";
@@ -31,8 +33,14 @@ export default function AdminRecipeRow({
     }
   };
 
+  const isDeleted = Boolean(recipe.deleted_at);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-4 md:p-5 hover:bg-[#faf9f5] transition-colors items-center group">
+    <div
+      className={`grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-4 md:p-5 transition-colors items-center group ${
+        isDeleted ? "bg-[#fbfaf9] opacity-80 hover:opacity-100 hover:bg-[#f5f4f0]" : "hover:bg-[#faf9f5]"
+      }`}
+    >
       {/* Title & Image & Cooking Info */}
       <div className="col-span-1 md:col-span-6 flex items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-[#e9e8e4] flex-shrink-0 overflow-hidden flex items-center justify-center border border-[#e0bfbd]/40 relative group-hover:shadow-sm transition-shadow">
@@ -50,7 +58,13 @@ export default function AdminRecipeRow({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-[var(--font-headline)] text-sm font-bold text-[#1b1c1a] truncate group-hover:text-[#ae2f34] transition-colors">
+            <p
+              className={`font-[var(--font-headline)] text-sm font-bold truncate transition-colors ${
+                isDeleted
+                  ? "text-[#8c706f] line-through group-hover:text-[#1b1c1a]"
+                  : "text-[#1b1c1a] group-hover:text-[#ae2f34]"
+              }`}
+            >
               {recipe.title}
             </p>
             <span className="hidden sm:inline-block text-[11px] font-mono text-[#8c706f] bg-[#efeeea] px-1.5 py-0.5 rounded">
@@ -79,7 +93,12 @@ export default function AdminRecipeRow({
 
       {/* Status & Date */}
       <div className="col-span-1 md:col-span-3 flex flex-wrap md:flex-col items-start gap-1.5">
-        {recipe.status === "approved" ? (
+        {isDeleted ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 font-[var(--font-headline)] text-xs font-bold">
+            <span className="material-symbols-outlined text-[13px]">delete_outline</span>
+            Đã xóa tạm
+          </span>
+        ) : recipe.status === "approved" ? (
           <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-[var(--font-headline)] text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             Đã duyệt
@@ -103,8 +122,8 @@ export default function AdminRecipeRow({
       {/* Quick Actions */}
       <div className="col-span-1 md:col-span-3 flex items-center justify-between md:justify-end gap-2 text-sm text-[#584140]">
         <div className="flex items-center gap-1">
-          {/* Approve button */}
-          {recipe.status !== "approved" && (
+          {/* Approve button (only if not deleted) */}
+          {!isDeleted && recipe.status !== "approved" && (
             <button
               type="button"
               onClick={() => onApprove(recipe)}
@@ -115,8 +134,8 @@ export default function AdminRecipeRow({
             </button>
           )}
 
-          {/* Reject button */}
-          {recipe.status !== "rejected" && (
+          {/* Reject button (only if not deleted) */}
+          {!isDeleted && recipe.status !== "rejected" && (
             <button
               type="button"
               onClick={() => onReject(recipe)}
@@ -136,24 +155,37 @@ export default function AdminRecipeRow({
             <span className="material-symbols-outlined text-[20px]">visibility</span>
           </Link>
 
-          {/* Edit button */}
-          <Link
-            href={`/admin/recipes/${recipe.id}/edit`}
-            className="p-2 rounded-xl hover:bg-[#efeeea] text-[#584140] hover:text-[#ae2f34] transition-all cursor-pointer"
-            title="Chỉnh sửa công thức"
-          >
-            <span className="material-symbols-outlined text-[20px]">edit</span>
-          </Link>
+          {/* Edit button (only if not deleted) */}
+          {!isDeleted && (
+            <Link
+              href={`/admin/recipes/${recipe.id}/edit`}
+              className="p-2 rounded-xl hover:bg-[#efeeea] text-[#584140] hover:text-[#ae2f34] transition-all cursor-pointer"
+              title="Chỉnh sửa công thức"
+            >
+              <span className="material-symbols-outlined text-[20px]">edit</span>
+            </Link>
+          )}
 
-          {/* Delete button */}
-          <button
-            type="button"
-            onClick={() => onDelete(recipe)}
-            className="p-2 rounded-xl hover:bg-[#ffdad6] text-[#584140] hover:text-[#ba1a1a] transition-all cursor-pointer"
-            title="Xóa công thức"
-          >
-            <span className="material-symbols-outlined text-[20px]">delete</span>
-          </button>
+          {/* Delete vs Recovery Button */}
+          {isDeleted ? (
+            <button
+              type="button"
+              onClick={() => onRestore(recipe)}
+              className="p-2 rounded-xl hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-all cursor-pointer"
+              title="Khôi phục công thức"
+            >
+              <span className="material-symbols-outlined text-[20px]">restore_from_trash</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onDelete(recipe)}
+              className="p-2 rounded-xl hover:bg-[#ffdad6] text-[#584140] hover:text-[#ba1a1a] transition-all cursor-pointer"
+              title="Xóa công thức"
+            >
+              <span className="material-symbols-outlined text-[20px]">delete</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

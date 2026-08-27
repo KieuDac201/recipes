@@ -41,6 +41,7 @@ router.put(
   RecipeController.updateRecipe
 )
 router.delete("/:id", verifyToken, authAdmin, RecipeController.deleteRecipe)
+router.patch("/:id/restore", verifyToken, authAdmin, RecipeController.restoreRecipe)
 router.patch(
   "/:id/status",
   verifyToken,

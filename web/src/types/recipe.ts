@@ -71,6 +71,7 @@ export interface Recipe extends BaseEntity, TimestampedEntity {
   author_id?: number | null;
   status?: RecipeStatus;
   rejection_reason?: string | null;
+  deleted_at?: string | Date | null;
 }
 
 export interface RecipeDetail extends Recipe {

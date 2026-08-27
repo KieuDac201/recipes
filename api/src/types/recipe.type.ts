@@ -11,6 +11,9 @@ interface Recipe {
   servings: number
   view_count?: number
   author_id: number
+  status?: RecipeStatus
+  rejection_reason?: string | null
+  deleted_at?: Date | string | null
   created_at: Date | string
 }
 

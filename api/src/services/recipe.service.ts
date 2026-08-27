@@ -39,6 +39,7 @@ const getMyRecipes = async (
     authorId,
     sortBy: "created_at",
     sortOrder: "desc",
+    includeDeleted: true,
   })
 }
 
@@ -58,6 +59,7 @@ const getAdminRecipes = async (
     authorId,
     sortBy: "created_at",
     sortOrder: "desc",
+    includeDeleted: true,
   })
 }
 
@@ -152,6 +154,17 @@ const removeRecipe = async (id: string): Promise<Recipe> => {
   return deletedRecipe
 }
 
+const restoreRecipe = async (id: string): Promise<Recipe> => {
+  const restoredRecipe = await RecipeRepository.restoreRecipe(id)
+
+  if (!restoredRecipe) {
+    throw new AppError("Not Found", 404)
+  }
+
+  invalidatePublicRecipesCache()
+  return restoredRecipe
+}
+
 const updateRecipeStatus = async (id: number, status: RecipeStatus, rejection_reason?: string) => {
   await RecipeRepository.updateRecipeStatus(id, status, rejection_reason)
   invalidatePublicRecipesCache()
@@ -179,6 +192,7 @@ const RecipeService = {
   postRecipe,
   updateRecipe,
   removeRecipe,
+  restoreRecipe,
   updateRecipeStatus,
   increaseViewCount,
 }

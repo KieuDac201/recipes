@@ -42,6 +42,7 @@ export const RecipeSchema = registry.register(
     view_count: z.number().int().optional().openapi({ example: 42 }),
     status: z.enum(["pending", "approved", "rejected"]).optional().openapi({ example: "approved" }),
     rejection_reason: z.string().nullable().optional().openapi({ example: null }),
+    deleted_at: z.union([z.string(), z.date()]).nullable().optional().openapi({ example: null }),
     created_at: z.union([z.string(), z.date()]).openapi({ example: "2026-08-10T08:30:00.000Z" }),
   })
 )
@@ -458,6 +459,23 @@ registry.registerPath({
       "Recipe view count increased successfully"
     ),
     400: errors.badRequest,
+    404: errors.notFound,
+  },
+})
+
+// 10. Restore Soft-Deleted Recipe
+registry.registerPath({
+  method: "patch",
+  path: "/recipes/{id}/restore",
+  tags: ["Recipes"],
+  summary: "Restore a soft-deleted recipe",
+  description: "Restores a soft-deleted recipe by clearing deleted_at. Requires admin privileges.",
+  security: [{ BearerAuth: [] }],
+  request: { params: recipeIdParamSchema },
+  responses: {
+    200: jsonResponse(UpdateRecipeResponseSchema, "Recipe restored successfully"),
+    401: errors.unauthorized,
+    403: errors.forbidden,
     404: errors.notFound,
   },
 })

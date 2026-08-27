@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { deleteRecipe, getAdminRecipes, updateRecipeStatus } from "@/src/services/recipeApi";
+import { deleteRecipe, restoreRecipe, getAdminRecipes, updateRecipeStatus } from "@/src/services/recipeApi";
 import { Recipe, RecipeStatus, PaginationMeta } from "@/src/types/recipe";
 import { ApiError } from "@/src/services/apiClient";
 import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
@@ -25,6 +25,9 @@ export function useAdminRecipesManagement() {
   // Modals state
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [recipeToRestore, setRecipeToRestore] = useState<Recipe | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const [recipeToApprove, setRecipeToApprove] = useState<Recipe | null>(null);
   const [isApproving, setIsApproving] = useState(false);
@@ -135,15 +138,21 @@ export function useAdminRecipesManagement() {
     onLoadMore: handleLoadMore,
   });
 
-  // Handle delete recipe
+  // Handle delete recipe (Soft Delete)
   const handleConfirmDelete = async () => {
     if (!recipeToDelete) return;
 
     setIsDeleting(true);
     try {
       await deleteRecipe(recipeToDelete.id);
-      setRecipes((prev) => prev.filter((r) => r.id !== recipeToDelete.id));
-      showToast(`Đã xóa thành công công thức "${recipeToDelete.title}"!`);
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r.id === recipeToDelete.id
+            ? { ...r, deleted_at: new Date().toISOString() }
+            : r
+        )
+      );
+      showToast(`Đã xóa công thức "${recipeToDelete.title}"!`);
       setRecipeToDelete(null);
     } catch (err: unknown) {
       console.error("[useAdminRecipesManagement] Error deleting recipe:", err);
@@ -154,6 +163,34 @@ export function useAdminRecipesManagement() {
       showToast(msg, "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Handle restore recipe
+  const handleConfirmRestore = async () => {
+    if (!recipeToRestore) return;
+
+    setIsRestoring(true);
+    try {
+      await restoreRecipe(recipeToRestore.id);
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r.id === recipeToRestore.id
+            ? { ...r, deleted_at: null }
+            : r
+        )
+      );
+      showToast(`Đã khôi phục công thức "${recipeToRestore.title}" thành công!`);
+      setRecipeToRestore(null);
+    } catch (err: unknown) {
+      console.error("[useAdminRecipesManagement] Error restoring recipe:", err);
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Đã xảy ra lỗi khi khôi phục công thức. Vui lòng thử lại.";
+      showToast(msg, "error");
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -245,6 +282,10 @@ export function useAdminRecipesManagement() {
     recipeToDelete,
     setRecipeToDelete,
     isDeleting,
+    recipeToRestore,
+    setRecipeToRestore,
+    isRestoring,
+    handleConfirmRestore,
     recipeToApprove,
     setRecipeToApprove,
     isApproving,
