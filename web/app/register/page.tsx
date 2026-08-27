@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GoogleLogin } from "@react-oauth/google";
 import { authService } from "@/src/services/authApi";
 import { registerSchema } from "@/src/schemas";
 
@@ -14,8 +15,33 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      try {
+        setGoogleLoading(true);
+        setErrorMessage(null);
+        setSuccessMessage(null);
+        await authService.googleLogin(credentialResponse.credential);
+        setSuccessMessage("Đăng ký Google thành công! Đang chuyển hướng...");
+
+        setTimeout(() => {
+          router.push("/");
+        }, 500);
+      } catch (err: any) {
+        setErrorMessage(err.message || "Đăng ký bằng Google thất bại. Vui lòng thử lại.");
+      } finally {
+        setGoogleLoading(false);
+      }
+    }
+  };
+
+  const handleGoogleError = () => {
+    setErrorMessage("Không thể kết nối với dịch vụ Google. Vui lòng thử lại.");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,6 +293,55 @@ export default function RegisterPage() {
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#efeeea]" />
+            </div>
+            <span className="relative bg-white px-3 text-xs font-semibold uppercase tracking-wider text-[#8c706f]">
+              hoặc đăng ký bằng
+            </span>
+          </div>
+
+          {/* Google Sign-up Button */}
+          <div className="flex justify-center w-full min-h-[44px]">
+            {googleLoading ? (
+              <div className="flex items-center justify-center gap-2 py-2.5 text-sm text-[#584140] font-medium">
+                <svg
+                  className="animate-spin h-5 w-5 text-[#ff6b6b]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Đang xác thực...
+              </div>
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                shape="pill"
+                size="large"
+                theme="outline"
+                text="signup_with"
+                width="350"
+              />
+            )}
+          </div>
 
           {/* Login Link */}
           <div className="mt-8 text-center md:text-left font-[var(--font-body)] text-sm sm:text-base text-[#584140] border-t border-[#efeeea] pt-5">

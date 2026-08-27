@@ -126,6 +126,49 @@ const updatePassword = async (email: string, passwordHash: string) => {
   await query(updatePasswordSql, [email, passwordHash])
 }
 
+const findUserByGoogleId = async (googleId: string): Promise<User | null> => {
+  const sql = `SELECT * FROM users WHERE google_id = $1`
+  const result = await query(sql, [googleId])
+  return result.rows[0] || null
+}
+
+const createGoogleUser = async (data: {
+  email: string
+  googleId: string
+  avatarUrl?: string | null
+}): Promise<User> => {
+  const insertSql = `
+    INSERT INTO users (
+      email,
+      google_id,
+      avatar_url,
+      auth_provider,
+      is_email_verified
+    )
+    VALUES ($1, $2, $3, 'google', TRUE)
+    RETURNING *
+  `
+  const result = await query(insertSql, [data.email, data.googleId, data.avatarUrl || null])
+  return result.rows[0]
+}
+
+const linkGoogleAccount = async (
+  userId: number,
+  googleId: string,
+  avatarUrl?: string | null
+): Promise<User> => {
+  const updateSql = `
+    UPDATE users
+    SET google_id = $2,
+        avatar_url = COALESCE(avatar_url, $3),
+        is_email_verified = TRUE
+    WHERE id = $1
+    RETURNING *
+  `
+  const result = await query(updateSql, [userId, googleId, avatarUrl || null])
+  return result.rows[0]
+}
+
 export const userRepository = {
   createUser,
   findUserByEmail,
@@ -136,4 +179,7 @@ export const userRepository = {
   incrementResetAttempts,
   lockResetOtp,
   updatePassword,
+  findUserByGoogleId,
+  createGoogleUser,
+  linkGoogleAccount,
 }

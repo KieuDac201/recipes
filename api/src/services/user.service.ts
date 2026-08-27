@@ -4,11 +4,13 @@ import { comparePassword, hashPassword } from "../utils"
 import { AppError } from "../utils/AppError"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { OAuth2Client } from "google-auth-library"
 import sendMail from "./email.service"
 import { generateOtpEmailHtml } from "../templates/otpEmail.template"
 import { generateVerificationEmailHtml } from "../templates/verifyEmail.template"
 
 const SECRET_KEY = process.env.JWT_SECRET
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 const createUser = async (user: UserPayload) => {
   const existUser = await userRepository.findUserByEmail(user.email)
@@ -235,6 +237,74 @@ const resetPassword = async (email: string, otp: string, password: string) => {
   await userRepository.updatePassword(email, hashedPassword)
 }
 
+const googleLogin = async (idToken: string) => {
+  if (!idToken || typeof idToken !== "string") {
+    throw new AppError("Google ID Token không hợp lệ.", 400)
+  }
+
+  let payload
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    })
+    payload = ticket.getPayload()
+  } catch (error) {
+    console.error("⚠️ Google ID Token verification failed:", error)
+    throw new AppError("Xác thực tài khoản Google thất bại hoặc phiên đăng nhập đã hết hạn.", 401)
+  }
+
+  if (!payload || !payload.email) {
+    throw new AppError("Không thể lấy thông tin email từ tài khoản Google của bạn.", 400)
+  }
+
+  const googleId = payload.sub
+  const email = payload.email.toLowerCase().trim()
+  const avatarUrl = payload.picture || null
+
+  // 1. Find user by google_id
+  let user = await userRepository.findUserByGoogleId(googleId)
+
+  if (!user) {
+    // 2. Check if user exists by email
+    const existingUser = await userRepository.findUserByEmail(email)
+
+    if (existingUser) {
+      // 3. Link Google account to existing user, preserve password_hash, mark verified
+      user = await userRepository.linkGoogleAccount(existingUser.id, googleId, avatarUrl)
+    } else {
+      // 4. Create new Google user
+      user = await userRepository.createGoogleUser({
+        email,
+        googleId,
+        avatarUrl,
+      })
+    }
+  }
+
+  if (!user) {
+    throw new AppError("Không thể hoàn tất đăng nhập bằng Google.", 500)
+  }
+
+  // 5. Generate application JWT session token
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    SECRET_KEY!,
+    { expiresIn: "7d" }
+  )
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      avatar_url: user.avatar_url,
+      auth_provider: user.auth_provider,
+    },
+    token,
+  }
+}
+
 export const userService = {
   createUser,
   loginUser,
@@ -242,4 +312,5 @@ export const userService = {
   resendVerificationEmail,
   forgotPassword,
   resetPassword,
+  googleLogin,
 }

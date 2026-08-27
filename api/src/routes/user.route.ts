@@ -7,6 +7,7 @@ import {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  googleLoginSchema,
 } from "../schemas/user.schema"
 
 const router = Router()
@@ -20,6 +21,7 @@ router.post(
   userController.resendVerification
 )
 router.post("/login", validateBody(createUserSchema), userController.loginUser)
+router.post("/oauth/google", validateBody(googleLoginSchema), userController.googleLogin)
 router.post("/forgot-password", validateBody(forgotPasswordSchema), userController.forgotPassword)
 router.post("/reset-password", validateBody(resetPasswordSchema), userController.resetPassword)
 

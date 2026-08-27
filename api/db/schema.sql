@@ -54,7 +54,7 @@ CREATE TYPE recipe_status AS ENUM ('pending','approved','rejected')
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) DEFAULT NULL,
     role user_role DEFAULT 'user',
     is_email_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255) DEFAULT NULL,
@@ -63,13 +63,20 @@ CREATE TABLE IF NOT EXISTS users (
     reset_otp_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     reset_otp_attempts INT DEFAULT 0,
     reset_otp_locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    google_id VARCHAR(255) UNIQUE DEFAULT NULL,
+    avatar_url VARCHAR(500) DEFAULT NULL,
+    auth_provider VARCHAR(50) DEFAULT 'local',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+
 -- Migration for existing database instances:
--- ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE;
--- ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255) DEFAULT NULL;
--- ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+-- ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE DEFAULT NULL;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT NULL;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'local';
+-- CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
 
 CREATE EXTENSION IF NOT EXISTS unaccent;
 

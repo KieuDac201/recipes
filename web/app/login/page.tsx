@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleLogin } from "@react-oauth/google";
 import { authService } from "@/src/services/authApi";
 import { loginSchema } from "@/src/schemas";
 
@@ -13,11 +14,11 @@ function LoginFormContent() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if redirected due to expired session
     if (typeof window !== "undefined") {
       const expiredMsg = sessionStorage.getItem("session_expired_message");
       if (expiredMsg) {
@@ -46,7 +47,6 @@ function LoginFormContent() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    // Validate with Zod Schema
     const validationResult = loginSchema.safeParse({ email, password });
     if (!validationResult.success) {
       const firstError = validationResult.error.issues[0]?.message || "Thông tin đăng nhập không hợp lệ.";
@@ -59,9 +59,13 @@ function LoginFormContent() {
       await authService.login(validationResult.data);
       setSuccessMessage("Đăng nhập thành công! Đang chuyển hướng...");
 
-      const redirectTo = searchParams.get("redirect") || "/admin";
+      const redirect = searchParams.get("redirect");
       setTimeout(() => {
-        router.push(redirectTo);
+        if (redirect && redirect.startsWith("/")) {
+          router.push(redirect);
+        } else {
+          router.push("/admin");
+        }
       }, 800);
     } catch (err: any) {
       setErrorMessage(
@@ -72,9 +76,37 @@ function LoginFormContent() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      try {
+        setGoogleLoading(true);
+        setErrorMessage(null);
+        setSuccessMessage(null);
+        await authService.googleLogin(credentialResponse.credential);
+        setSuccessMessage("Đăng nhập Google thành công! Đang chuyển hướng...");
+
+        setTimeout(() => {
+          const redirect = searchParams.get("redirect");
+          if (redirect && redirect.startsWith("/")) {
+            router.push(redirect);
+          } else {
+            router.push("/admin");
+          }
+        }, 500);
+      } catch (err: any) {
+        setErrorMessage(err.message || "Đăng nhập bằng Google thất bại. Vui lòng thử lại.");
+      } finally {
+        setGoogleLoading(false);
+      }
+    }
+  };
+
+  const handleGoogleError = () => {
+    setErrorMessage("Không thể kết nối với dịch vụ Google. Vui lòng thử lại.");
+  };
+
   return (
     <main className="w-full max-w-[460px] bg-white rounded-[24px] shadow-[0_12px_32px_-6px_rgba(255,107,107,0.12)] border border-[#efeeea] p-6 sm:p-8 md:p-10 transition-all">
-      {/* Brand / Header */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-block group mb-1">
           <h1 className="font-[var(--font-headline)] text-4xl sm:text-5xl font-extrabold text-[#ae2f34] tracking-tight group-hover:scale-105 transition-transform duration-200">
@@ -86,7 +118,6 @@ function LoginFormContent() {
         </p>
       </div>
 
-      {/* Status Alerts */}
       {errorMessage && (
         <div className="mb-6 p-4 rounded-xl bg-[#ffdad6] border border-[#ba1a1a]/20 text-[#93000a] text-sm flex items-start gap-3 animate-fadeIn">
           <span className="material-symbols-outlined text-[20px] shrink-0 mt-0.5">
@@ -105,9 +136,7 @@ function LoginFormContent() {
         </div>
       )}
 
-      {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Email Address */}
         <div>
           <label
             htmlFor="email"
@@ -132,7 +161,6 @@ function LoginFormContent() {
           </div>
         </div>
 
-        {/* Password */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <label
@@ -175,11 +203,10 @@ function LoginFormContent() {
           </div>
         </div>
 
-        {/* Submit Button */}
         <div className="pt-2">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || googleLoading}
             className="w-full bg-[#ff6b6b] hover:bg-[#ff5656] text-white border-b-4 border-[#ae2f34] hover:border-[#8c1520] active:border-b-0 active:translate-y-1 rounded-full py-3.5 px-6 font-[var(--font-headline)] font-bold text-sm tracking-wide shadow-md hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed group"
           >
             {loading ? (
@@ -218,7 +245,53 @@ function LoginFormContent() {
         </div>
       </form>
 
-      {/* Register Redirection */}
+      <div className="relative my-6 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-[#efeeea]" />
+        </div>
+        <span className="relative bg-white px-3 text-xs font-semibold uppercase tracking-wider text-[#8c706f]">
+          hoặc
+        </span>
+      </div>
+
+      <div className="flex justify-center w-full min-h-[44px]">
+        {googleLoading ? (
+          <div className="flex items-center justify-center gap-2 py-2.5 text-sm text-[#584140] font-medium">
+            <svg
+              className="animate-spin h-5 w-5 text-[#ff6b6b]"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Đang xác thực...
+          </div>
+        ) : (
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            shape="pill"
+            size="large"
+            theme="outline"
+            text="signin_with"
+            width="350"
+          />
+        )}
+      </div>
+
       <div className="mt-8 text-center pt-6 border-t border-[#efeeea]">
         <p className="text-sm sm:text-base text-[#584140]">
           Don&apos;t have an account?{" "}

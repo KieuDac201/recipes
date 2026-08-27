@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
+import GoogleAuthProvider from "./components/GoogleAuthProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-headline",
@@ -40,7 +41,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#faf9f5] text-[#1b1c1a]">
-        {children}
+        <GoogleAuthProvider>{children}</GoogleAuthProvider>
       </body>
     </html>
   );

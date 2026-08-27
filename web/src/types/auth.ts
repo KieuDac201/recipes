@@ -2,6 +2,8 @@ export interface UserProfile {
   id?: number;
   email: string;
   role?: string;
+  avatar_url?: string | null;
+  auth_provider?: string;
   created_at?: string;
 }
 

@@ -69,6 +69,20 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
   }
 }
 
+const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { idToken } = req.body
+    const result = await userService.googleLogin(idToken)
+    res.cookie("token", result.token, COOKIE_OPTIONS)
+    res.status(200).json({
+      message: "Đăng nhập bằng Google thành công!",
+      user: result,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   createUser,
   verifyEmail,
@@ -76,4 +90,5 @@ export const userController = {
   loginUser,
   forgotPassword,
   resetPassword,
+  googleLogin,
 }

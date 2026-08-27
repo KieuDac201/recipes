@@ -269,3 +269,52 @@ registry.registerPath({
     500: errResponse("Internal server error"),
   },
 })
+
+// 7. Google OAuth2 Login & Signup (POST /users/oauth/google)
+export const GoogleLoginSchema = registry.register(
+  "GoogleLogin",
+  z.object({
+    idToken: z.string().min(1, "Google ID Token is required").openapi({
+      example: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...",
+      description: "Google ID Token received from Google Identity Services",
+    }),
+  })
+)
+export const googleLoginSchema = GoogleLoginSchema
+export type GoogleLoginSchemaType = z.infer<typeof GoogleLoginSchema>
+
+export const GoogleLoginResponseSchema = registry.register(
+  "GoogleLoginResponse",
+  z.object({
+    message: z.string().openapi({ example: "User logged in with Google successfully" }),
+    user: z.object({
+      user: z.object({
+        id: z.number().int().openapi({ example: 1 }),
+        email: z.string().email().openapi({ example: "user@gmail.com" }),
+        role: z.string().openapi({ example: "user" }),
+        avatar_url: z.string().nullable().optional().openapi({ example: "https://lh3.googleusercontent.com/..." }),
+        auth_provider: z.string().optional().openapi({ example: "google" }),
+      }),
+      token: z.string().openapi({
+        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        description: "JWT session token",
+      }),
+    }),
+  })
+)
+
+registry.registerPath({
+  method: "post",
+  path: "/users/oauth/google",
+  tags: ["Users & Authentication"],
+  summary: "Google OAuth2 Login / Sign Up",
+  description:
+    "Verifies Google ID Token, links account if email exists, creates user if not exists, and issues JWT session token.",
+  request: { body: { content: jsonContent(GoogleLoginSchema) } },
+  responses: {
+    200: jsonResponse(GoogleLoginResponseSchema, "User logged in with Google successfully"),
+    400: errResponse("Invalid Google token or missing email profile"),
+    401: errResponse("Google verification failed or expired"),
+    500: errResponse("Internal server error"),
+  },
+})
