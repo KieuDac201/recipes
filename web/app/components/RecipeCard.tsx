@@ -5,6 +5,8 @@ import type { Recipe, RecipeStatus } from "@/src/types/recipe";
 export interface RecipeCardProps {
   recipe: Recipe;
   showStatus?: boolean;
+  showEditButton?: boolean;
+  editHref?: string;
   className?: string;
 }
 
@@ -38,6 +40,8 @@ export function getStatusBadge(status?: RecipeStatus) {
 export default function RecipeCard({
   recipe,
   showStatus = false,
+  showEditButton = false,
+  editHref,
   className = "",
 }: RecipeCardProps) {
   const totalTime =
@@ -100,7 +104,7 @@ export default function RecipeCard({
         </div>
 
         {/* Meta & Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f] mt-auto">
+        <div className="flex items-center justify-between pt-4 border-t border-[#f0eee9] text-xs text-[#8c706f] mt-auto gap-2">
           <div className="flex items-center gap-3">
             <span
               className="flex items-center gap-1"
@@ -124,6 +128,17 @@ export default function RecipeCard({
               {(recipe.view_count || 0).toLocaleString()}
             </span>
           </div>
+
+          {showEditButton && (
+            <Link
+              href={editHref || `/recipes/${recipe.slug || recipe.id}/edit`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#faf9f5] hover:bg-[#ffdad6] text-[#584140] hover:text-[#ae2f34] border border-[#e5e3dc] font-semibold transition-all shadow-sm active:scale-95 cursor-pointer flex-shrink-0"
+              title="Chỉnh sửa công thức"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
+              <span>Sửa</span>
+            </Link>
+          )}
         </div>
       </div>
     </div>

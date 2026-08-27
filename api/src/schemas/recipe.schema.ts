@@ -390,7 +390,7 @@ registry.registerPath({
   tags: ["Recipes"],
   summary: "Update an existing recipe by ID",
   description:
-    "Updates an existing recipe including title, description, categories, ingredients, and instructions.",
+    "Updates an existing recipe including title, description, categories, ingredients, and instructions. Automatically reverts status to pending for re-moderation. Requires authentication (Author or Admin).",
   security: [{ BearerAuth: [] }],
   request: {
     params: recipeIdParamSchema,

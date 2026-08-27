@@ -1,6 +1,7 @@
 import * as RecipeRepository from "../repositories/recipe.repository"
 import { incrementRecipeViewInRedis, isRedisConfigured, redis, REDIS_KEYS } from "../config/redis"
 import { Recipe, RecipeBody, RecipeDetail, RecipeSortBy, RecipeStatus } from "../types/recipe.type"
+import { User } from "../types/user.type"
 import { AppError } from "../utils/AppError"
 import { SortOrder } from "../types"
 
@@ -136,8 +137,18 @@ const postRecipe = async (recipe: RecipeBody): Promise<Recipe> => {
 
 const updateRecipe = async (
   id: string,
-  recipe: RecipeBody
+  recipe: RecipeBody,
+  user?: User
 ): Promise<Omit<Recipe, "created_at">> => {
+  const existingRecipe = await RecipeRepository.findRecipeById(id)
+  if (!existingRecipe) {
+    throw new AppError("Not Found", 404)
+  }
+
+  if (user && user.role !== "admin" && existingRecipe.author_id !== user.id) {
+    throw new AppError("Forbidden: Bạn không có quyền chỉnh sửa công thức này.", 403)
+  }
+
   const updated = await RecipeRepository.updateRecipe(id, recipe)
   invalidatePublicRecipesCache()
   return updated

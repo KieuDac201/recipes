@@ -112,7 +112,7 @@ const createRecipe = async (req: Request, res: Response, next: NextFunction) => 
 const updateRecipe = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string }
-    const recipe = await RecipeService.updateRecipe(id, req.body)
+    const recipe = await RecipeService.updateRecipe(id, req.body, req.user)
     return sendSuccess(res, recipe, 200)
   } catch (error) {
     next(error)

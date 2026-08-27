@@ -218,7 +218,9 @@ const updateRecipe = async (
                 image_url = COALESCE($4, image_url),
                 prep_time_minutes = COALESCE($5, prep_time_minutes),
                 cook_time_minutes = COALESCE($6, cook_time_minutes),
-                servings = COALESCE($7, servings)
+                servings = COALESCE($7, servings),
+                status = 'pending',
+                rejection_reason = NULL
             WHERE id = $8
             RETURNING *
         `

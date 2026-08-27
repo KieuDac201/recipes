@@ -198,7 +198,12 @@ export default function MyRecipesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {recipes.map((recipe) => (
               <div key={recipe.id} className="h-full flex flex-col">
-                <RecipeCard recipe={recipe} showStatus={true} className="h-full" />
+                <RecipeCard
+                  recipe={recipe}
+                  showStatus={true}
+                  showEditButton={true}
+                  className="h-full"
+                />
               </div>
             ))}
           </div>

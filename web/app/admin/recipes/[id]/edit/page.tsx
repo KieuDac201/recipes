@@ -41,11 +41,17 @@ const createEmptyFormData = (): CreateRecipeFormData => ({
   ],
 });
 
-export default function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditRecipePage({
+  params,
+}: {
+  params: Promise<{ id?: string; slug?: string }>;
+}) {
   const unwrappedParams = use(params);
-  const recipeId = unwrappedParams.id;
+  const paramKey = unwrappedParams.id || unwrappedParams.slug || "";
   const router = useRouter();
 
+  const [actualRecipeId, setActualRecipeId] = useState<number | string>(paramKey);
+  const recipeId = actualRecipeId || paramKey;
   const [isLoadingRecipe, setIsLoadingRecipe] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -130,7 +136,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       setLoadError(null);
       try {
         const [recipeData, categoriesData] = await Promise.all([
-          getRecipeByIdOrSlug(recipeId),
+          getRecipeByIdOrSlug(paramKey),
           getCategories(),
         ]);
         if (!recipeData) {
@@ -138,6 +144,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
           return;
         }
         if (isMounted) {
+          setActualRecipeId(recipeData.id);
           populateFormData(recipeData, categoriesData);
         }
       } catch (err: any) {
@@ -314,7 +321,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
     };
 
     try {
-      const result = await updateRecipe(recipeId, payload);
+      const result = await updateRecipe(actualRecipeId || paramKey, payload);
       setUpdatedRecipe(result);
       showToast("Cập nhật công thức thành công!");
     } catch (err: any) {
@@ -323,7 +330,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       if (err instanceof ApiError && err.statusCode === 401) {
         // Auto-save edit draft to localStorage
         try {
-          localStorage.setItem(`gourmet_recipe_edit_draft_${recipeId}`, JSON.stringify(formData));
+          localStorage.setItem(`gourmet_recipe_edit_draft_${actualRecipeId || paramKey}`, JSON.stringify(formData));
         } catch { }
         setUpdateError("Phiên làm việc đã hết hạn. Hệ thống đã lưu lại thay đổi của bạn. Vui lòng đăng nhập lại.");
         showToast("Phiên hết hạn, đã lưu bản nháp của bạn!");
@@ -331,7 +338,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       }
 
       if (err instanceof ApiError && err.statusCode === 403) {
-        setUpdateError("Bạn không có quyền quản trị viên để chỉnh sửa công thức này.");
+        setUpdateError("Bạn không có quyền chỉnh sửa công thức này.");
         showToast("Lỗi 403: Bạn không có quyền thực hiện hành động này!");
         return;
       }

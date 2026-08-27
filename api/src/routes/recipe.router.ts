@@ -36,7 +36,6 @@ router.post(
 router.put(
   "/:id",
   verifyToken,
-  authAdmin,
   validateBody(updateRecipePayloadSchema),
   RecipeController.updateRecipe
 )
