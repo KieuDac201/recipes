@@ -83,6 +83,20 @@ const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
+const facebookLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { accessToken } = req.body
+    const result = await userService.facebookLogin(accessToken)
+    res.cookie("token", result.token, COOKIE_OPTIONS)
+    res.status(200).json({
+      message: "Đăng nhập bằng Facebook thành công!",
+      user: result,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   createUser,
   verifyEmail,
@@ -91,4 +105,5 @@ export const userController = {
   forgotPassword,
   resetPassword,
   googleLogin,
+  facebookLogin,
 }

@@ -16,6 +16,7 @@ interface User {
   reset_otp_hash: string | null
   reset_otp_expires_at: string | null
   google_id?: string | null
+  facebook_id?: string | null
   avatar_url?: string | null
   auth_provider?: string
   created_at: string
@@ -43,6 +44,10 @@ interface GoogleLoginPayload {
   idToken: string
 }
 
+interface FacebookLoginPayload {
+  accessToken: string
+}
+
 export {
   UserPayload,
   User,
@@ -51,4 +56,5 @@ export {
   VerifyEmailPayload,
   ResendVerificationPayload,
   GoogleLoginPayload,
+  FacebookLoginPayload,
 }

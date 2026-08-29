@@ -8,6 +8,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   googleLoginSchema,
+  facebookLoginSchema,
 } from "../schemas/user.schema"
 
 const router = Router()
@@ -22,6 +23,7 @@ router.post(
 )
 router.post("/login", validateBody(createUserSchema), userController.loginUser)
 router.post("/oauth/google", validateBody(googleLoginSchema), userController.googleLogin)
+router.post("/oauth/facebook", validateBody(facebookLoginSchema), userController.facebookLogin)
 router.post("/forgot-password", validateBody(forgotPasswordSchema), userController.forgotPassword)
 router.post("/reset-password", validateBody(resetPasswordSchema), userController.resetPassword)
 

@@ -318,3 +318,52 @@ registry.registerPath({
     500: errResponse("Internal server error"),
   },
 })
+
+// 8. Facebook OAuth2 Login & Signup (POST /users/oauth/facebook)
+export const FacebookLoginSchema = registry.register(
+  "FacebookLogin",
+  z.object({
+    accessToken: z.string().min(1, "Facebook Access Token is required").openapi({
+      example: "EAABsbCS1iHgBA...",
+      description: "Facebook Access Token received from Facebook JavaScript SDK",
+    }),
+  })
+)
+export const facebookLoginSchema = FacebookLoginSchema
+export type FacebookLoginSchemaType = z.infer<typeof FacebookLoginSchema>
+
+export const FacebookLoginResponseSchema = registry.register(
+  "FacebookLoginResponse",
+  z.object({
+    message: z.string().openapi({ example: "User logged in with Facebook successfully" }),
+    user: z.object({
+      user: z.object({
+        id: z.number().int().openapi({ example: 1 }),
+        email: z.string().email().openapi({ example: "user@facebook.recipes.local" }),
+        role: z.string().openapi({ example: "user" }),
+        avatar_url: z.string().nullable().optional().openapi({ example: "https://platform-lookaside.fbsbx.com/..." }),
+        auth_provider: z.string().optional().openapi({ example: "facebook" }),
+      }),
+      token: z.string().openapi({
+        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        description: "JWT session token",
+      }),
+    }),
+  })
+)
+
+registry.registerPath({
+  method: "post",
+  path: "/users/oauth/facebook",
+  tags: ["Users & Authentication"],
+  summary: "Facebook OAuth2 Login / Sign Up",
+  description:
+    "Verifies Facebook Access Token via Graph API, generates synthetic email if missing, links account if email exists, creates user if not exists, and issues JWT session token.",
+  request: { body: { content: jsonContent(FacebookLoginSchema) } },
+  responses: {
+    200: jsonResponse(FacebookLoginResponseSchema, "User logged in with Facebook successfully"),
+    400: errResponse("Invalid Facebook access token"),
+    401: errResponse("Facebook verification failed or session expired"),
+    500: errResponse("Internal server error"),
+  },
+})

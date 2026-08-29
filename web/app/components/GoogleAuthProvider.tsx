@@ -7,7 +7,9 @@ interface GoogleAuthProviderProps {
   children: React.ReactNode;
 }
 
-export default function GoogleAuthProvider({ children }: GoogleAuthProviderProps) {
+export default function GoogleAuthProvider({
+  children,
+}: GoogleAuthProviderProps) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   if (!clientId) {
@@ -15,8 +17,6 @@ export default function GoogleAuthProvider({ children }: GoogleAuthProviderProps
   }
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      {children}
-    </GoogleOAuthProvider>
+    <GoogleOAuthProvider clientId={clientId}>{children}</GoogleOAuthProvider>
   );
 }

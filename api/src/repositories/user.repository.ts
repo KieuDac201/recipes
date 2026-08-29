@@ -169,6 +169,49 @@ const linkGoogleAccount = async (
   return result.rows[0]
 }
 
+const findUserByFacebookId = async (facebookId: string): Promise<User | null> => {
+  const sql = `SELECT * FROM users WHERE facebook_id = $1`
+  const result = await query(sql, [facebookId])
+  return result.rows[0] || null
+}
+
+const createFacebookUser = async (data: {
+  email: string
+  facebookId: string
+  avatarUrl?: string | null
+}): Promise<User> => {
+  const insertSql = `
+    INSERT INTO users (
+      email,
+      facebook_id,
+      avatar_url,
+      auth_provider,
+      is_email_verified
+    )
+    VALUES ($1, $2, $3, 'facebook', TRUE)
+    RETURNING *
+  `
+  const result = await query(insertSql, [data.email, data.facebookId, data.avatarUrl || null])
+  return result.rows[0]
+}
+
+const linkFacebookAccount = async (
+  userId: number,
+  facebookId: string,
+  avatarUrl?: string | null
+): Promise<User> => {
+  const updateSql = `
+    UPDATE users
+    SET facebook_id = $2,
+        avatar_url = COALESCE(avatar_url, $3),
+        is_email_verified = TRUE
+    WHERE id = $1
+    RETURNING *
+  `
+  const result = await query(updateSql, [userId, facebookId, avatarUrl || null])
+  return result.rows[0]
+}
+
 export const userRepository = {
   createUser,
   findUserByEmail,
@@ -182,4 +225,7 @@ export const userRepository = {
   findUserByGoogleId,
   createGoogleUser,
   linkGoogleAccount,
+  findUserByFacebookId,
+  createFacebookUser,
+  linkFacebookAccount,
 }

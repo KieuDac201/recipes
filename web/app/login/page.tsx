@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
+import FacebookLoginButton from "@/app/components/FacebookLoginButton";
 import { authService } from "@/src/services/authApi";
 import { loginSchema } from "@/src/schemas";
 
@@ -15,6 +16,7 @@ function LoginFormContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -104,6 +106,67 @@ function LoginFormContent() {
   const handleGoogleError = () => {
     setErrorMessage("Không thể kết nối với dịch vụ Google. Vui lòng thử lại.");
   };
+
+  const handleFacebookSuccess = async (accessToken: string) => {
+    try {
+      setFacebookLoading(true);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      await authService.facebookLogin(accessToken);
+      setSuccessMessage("Đăng nhập Facebook thành công! Đang chuyển hướng...");
+
+      setTimeout(() => {
+        const redirect = searchParams.get("redirect");
+        if (redirect && redirect.startsWith("/")) {
+          router.push(redirect);
+        } else {
+          router.push("/admin");
+        }
+      }, 500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Đăng nhập bằng Facebook thất bại. Vui lòng thử lại.");
+    } finally {
+      setFacebookLoading(false);
+    }
+  };
+
+  const handleFacebookError = (errorMsg: string) => {
+    setErrorMessage(errorMsg || "Đăng nhập bằng Facebook thất bại.");
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Check if Facebook redirected to this page with #access_token=...
+    const hash = window.location.hash.substring(1);
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash);
+    const fbAccessToken = params.get("access_token");
+    const fbError = params.get("error_description") || params.get("error");
+
+    if (fbAccessToken) {
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: "FACEBOOK_AUTH_SUCCESS", accessToken: fbAccessToken },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+      handleFacebookSuccess(fbAccessToken);
+    } else if (fbError) {
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: "FACEBOOK_AUTH_ERROR", error: fbError },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+      setErrorMessage(fbError);
+    }
+  }, []);
 
   return (
     <main className="w-full max-w-[460px] bg-white rounded-[24px] shadow-[0_12px_32px_-6px_rgba(255,107,107,0.12)] border border-[#efeeea] p-6 sm:p-8 md:p-10 transition-all">
@@ -206,13 +269,13 @@ function LoginFormContent() {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={loading || googleLoading}
+            disabled={loading || googleLoading || facebookLoading}
             className="w-full bg-[#ff6b6b] hover:bg-[#ff5656] text-white border-b-4 border-[#ae2f34] hover:border-[#8c1520] active:border-b-0 active:translate-y-1 rounded-full py-3.5 px-6 font-[var(--font-headline)] font-bold text-sm tracking-wide shadow-md hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed group"
           >
             {loading ? (
-              <>
+              <span className="flex items-center gap-2">
                 <svg
-                  className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -231,12 +294,12 @@ function LoginFormContent() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Đang đăng nhập...
-              </>
+                Đang xử lý...
+              </span>
             ) : (
               <>
-                Sign In
-                <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">
+                <span>Sign in</span>
+                <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">
                   arrow_forward
                 </span>
               </>
@@ -254,7 +317,7 @@ function LoginFormContent() {
         </span>
       </div>
 
-      <div className="flex justify-center w-full min-h-[44px]">
+      <div className="flex flex-col items-center gap-3 w-full min-h-[44px]">
         {googleLoading ? (
           <div className="flex items-center justify-center gap-2 py-2.5 text-sm text-[#584140] font-medium">
             <svg
@@ -277,7 +340,7 @@ function LoginFormContent() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Đang xác thực...
+            Đang xác thực Google...
           </div>
         ) : (
           <GoogleLogin
@@ -290,6 +353,13 @@ function LoginFormContent() {
             width="350"
           />
         )}
+
+        <FacebookLoginButton
+          onSuccess={handleFacebookSuccess}
+          onError={handleFacebookError}
+          disabled={loading || googleLoading || facebookLoading}
+          text="signin_with"
+        />
       </div>
 
       <div className="mt-8 text-center pt-6 border-t border-[#efeeea]">

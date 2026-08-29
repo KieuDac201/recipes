@@ -305,6 +305,93 @@ const googleLogin = async (idToken: string) => {
   }
 }
 
+const facebookLogin = async (accessToken: string) => {
+  if (!accessToken || typeof accessToken !== "string") {
+    throw new AppError("Facebook Access Token không hợp lệ.", 400)
+  }
+
+  let fbData: {
+    id: string
+    name?: string
+    email?: string
+    picture?: {
+      data?: {
+        url?: string
+      }
+    }
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const result = await response.json()
+
+    if (!response.ok || result.error || !result.id) {
+      console.error("⚠️ Facebook Graph API verification failed:", result.error || result)
+      throw new AppError(
+        result.error?.message || "Xác thực tài khoản Facebook thất bại hoặc phiên đăng nhập đã hết hạn.",
+        401
+      )
+    }
+
+    fbData = result
+  } catch (error: any) {
+    if (error instanceof AppError) throw error
+    console.error("⚠️ Facebook Graph API network error:", error)
+    throw new AppError("Không thể kết nối với dịch vụ xác thực Facebook.", 500)
+  }
+
+  const facebookId = fbData.id
+  // Cách 1: Synthetic Email Fallback nếu người dùng không liên kết hoặc không cấp quyền email
+  const email = fbData.email
+    ? fbData.email.toLowerCase().trim()
+    : `fb_${facebookId}@facebook.recipes.local`
+  const avatarUrl = fbData.picture?.data?.url || null
+
+  // 1. Find user by facebook_id
+  let user = await userRepository.findUserByFacebookId(facebookId)
+
+  if (!user) {
+    // 2. Check if user exists by email
+    const existingUser = await userRepository.findUserByEmail(email)
+
+    if (existingUser) {
+      // 3. Link Facebook account to existing user, preserve password_hash, mark verified
+      user = await userRepository.linkFacebookAccount(existingUser.id, facebookId, avatarUrl)
+    } else {
+      // 4. Create new Facebook user
+      user = await userRepository.createFacebookUser({
+        email,
+        facebookId,
+        avatarUrl,
+      })
+    }
+  }
+
+  if (!user) {
+    throw new AppError("Không thể hoàn tất đăng nhập bằng Facebook.", 500)
+  }
+
+  // 5. Generate application JWT session token
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    SECRET_KEY!,
+    { expiresIn: "7d" }
+  )
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      avatar_url: user.avatar_url,
+      auth_provider: user.auth_provider,
+    },
+    token,
+  }
+}
+
 export const userService = {
   createUser,
   loginUser,
@@ -313,4 +400,5 @@ export const userService = {
   forgotPassword,
   resetPassword,
   googleLogin,
+  facebookLogin,
 }

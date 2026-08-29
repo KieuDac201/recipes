@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
+import FacebookLoginButton from "@/app/components/FacebookLoginButton";
 import { authService } from "@/src/services/authApi";
 import { registerSchema } from "@/src/schemas";
 
@@ -16,6 +17,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -42,6 +44,61 @@ export default function RegisterPage() {
   const handleGoogleError = () => {
     setErrorMessage("Không thể kết nối với dịch vụ Google. Vui lòng thử lại.");
   };
+
+  const handleFacebookSuccess = async (accessToken: string) => {
+    try {
+      setFacebookLoading(true);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      await authService.facebookLogin(accessToken);
+      setSuccessMessage("Đăng ký Facebook thành công! Đang chuyển hướng...");
+
+      setTimeout(() => {
+        router.push("/");
+      }, 500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Đăng ký bằng Facebook thất bại. Vui lòng thử lại.");
+    } finally {
+      setFacebookLoading(false);
+    }
+  };
+
+  const handleFacebookError = (errorMsg: string) => {
+    setErrorMessage(errorMsg || "Đăng ký bằng Facebook thất bại.");
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hash = window.location.hash.substring(1);
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash);
+    const fbAccessToken = params.get("access_token");
+    const fbError = params.get("error_description") || params.get("error");
+
+    if (fbAccessToken) {
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: "FACEBOOK_AUTH_SUCCESS", accessToken: fbAccessToken },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+      handleFacebookSuccess(fbAccessToken);
+    } else if (fbError) {
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: "FACEBOOK_AUTH_ERROR", error: fbError },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+      setErrorMessage(fbError);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,7 +309,7 @@ export default function RegisterPage() {
             {/* Submit Button with Glint & 3D Shadow Effect */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading || facebookLoading}
               className="w-full bg-[#ff6b6b] hover:bg-[#ff5656] text-white font-[var(--font-headline)] font-bold text-sm tracking-wide rounded-xl py-3.5 mt-2 flex items-center justify-center gap-2 shadow-[0_3px_0_0_#ae2f34] hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#ae2f34] active:translate-y-1 active:shadow-none transition-all duration-150 relative overflow-hidden group cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
               <span className="relative z-10 flex items-center gap-2">
@@ -304,8 +361,8 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          {/* Google Sign-up Button */}
-          <div className="flex justify-center w-full min-h-[44px]">
+          {/* Social Sign-up Buttons */}
+          <div className="flex flex-col items-center gap-3 w-full min-h-[44px]">
             {googleLoading ? (
               <div className="flex items-center justify-center gap-2 py-2.5 text-sm text-[#584140] font-medium">
                 <svg
@@ -328,7 +385,7 @@ export default function RegisterPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Đang xác thực...
+                Đang xác thực Google...
               </div>
             ) : (
               <GoogleLogin
@@ -341,6 +398,13 @@ export default function RegisterPage() {
                 width="350"
               />
             )}
+
+            <FacebookLoginButton
+              onSuccess={handleFacebookSuccess}
+              onError={handleFacebookError}
+              disabled={loading || googleLoading || facebookLoading}
+              text="signup_with"
+            />
           </div>
 
           {/* Login Link */}

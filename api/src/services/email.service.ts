@@ -2,8 +2,7 @@ import transporter from "../config/email"
 import { AppError } from "../utils/AppError"
 
 const sendMail = async (email: string, subject: string, html: string) => {
-  const fromUser =
-    process.env.EMAIL_FROM || process.env.GMAIL_USER || process.env.SMTP_USER || "noreply@gmail.com"
+  const fromUser = process.env.GMAIL_USER
   const fromName = "Bếp Phương"
   const from = `"${fromName}" <${fromUser}>`
 

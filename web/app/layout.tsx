@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
+import { Plus_Jakarta_Sans, Be_Vietnam_Pro, Roboto } from "next/font/google";
 import "./globals.css";
 import GoogleAuthProvider from "./components/GoogleAuthProvider";
+import FacebookAuthProvider from "./components/FacebookAuthProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-headline",
@@ -14,6 +15,13 @@ const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -31,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${plusJakartaSans.variable} ${beVietnamPro.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${beVietnamPro.variable} ${roboto.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols Outlined for icons */}
@@ -41,7 +49,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#faf9f5] text-[#1b1c1a]">
-        <GoogleAuthProvider>{children}</GoogleAuthProvider>
+        <GoogleAuthProvider>
+          <FacebookAuthProvider>{children}</FacebookAuthProvider>
+        </GoogleAuthProvider>
       </body>
     </html>
   );

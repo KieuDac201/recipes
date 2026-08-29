@@ -80,6 +80,29 @@ export const authService = {
   },
 
   /**
+   * Log in or Sign up with Facebook OAuth2 Access Token
+   */
+  facebookLogin: async (accessToken: string): Promise<{ user: UserProfile; token: string }> => {
+    try {
+      const response = await apiClient.post<AuthSuccessResponse>("/users/oauth/facebook", { accessToken });
+      const token = response.user?.token;
+      const user = response.user?.user || { email: "" };
+
+      if (token && typeof window !== "undefined") {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      }
+
+      return { user, token };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Đăng nhập bằng Facebook thất bại. Vui lòng thử lại.");
+    }
+  },
+
+  /**
    * Register a new user account
    */
   register: async (payload: RegisterPayload): Promise<UserProfile> => {
