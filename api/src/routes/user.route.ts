@@ -9,6 +9,7 @@ import {
   resetPasswordSchema,
   googleLoginSchema,
   facebookLoginSchema,
+  refreshTokenSchema,
 } from "../schemas/user.schema"
 
 const router = Router()
@@ -26,5 +27,7 @@ router.post("/oauth/google", validateBody(googleLoginSchema), userController.goo
 router.post("/oauth/facebook", validateBody(facebookLoginSchema), userController.facebookLogin)
 router.post("/forgot-password", validateBody(forgotPasswordSchema), userController.forgotPassword)
 router.post("/reset-password", validateBody(resetPasswordSchema), userController.resetPassword)
+router.post("/refresh", validateBody(refreshTokenSchema), userController.refreshToken)
+router.post("/logout", userController.logoutUser)
 
 export default router

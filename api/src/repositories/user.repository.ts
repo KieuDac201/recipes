@@ -9,6 +9,12 @@ const findUserByEmail = async (email: string): Promise<User | null> => {
   return users.rows[0] || null
 }
 
+const findUserById = async (id: number): Promise<User | null> => {
+  const sql = `SELECT * FROM users WHERE id = $1`
+  const result = await query(sql, [id])
+  return result.rows[0] || null
+}
+
 const findUserByVerificationToken = async (tokenHash: string): Promise<User | null> => {
   const sql = `
     SELECT * FROM users WHERE email_verification_token = $1
@@ -215,6 +221,7 @@ const linkFacebookAccount = async (
 export const userRepository = {
   createUser,
   findUserByEmail,
+  findUserById,
   findUserByVerificationToken,
   saveEmailVerificationToken,
   verifyUserEmail,

@@ -7,7 +7,9 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
   let accessToken = authHeader ? authHeader.split(" ")[1] : null
 
-  if (!accessToken && req.headers.cookie) {
+  if (!accessToken && req.cookies?.token) {
+    accessToken = req.cookies.token
+  } else if (!accessToken && req.headers.cookie) {
     const cookies = req.headers.cookie.split(";").reduce((acc: Record<string, string>, item) => {
       const [key, ...vals] = item.trim().split("=")
       if (key) acc[key] = decodeURIComponent(vals.join("="))

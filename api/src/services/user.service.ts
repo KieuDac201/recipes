@@ -1,4 +1,5 @@
 import { userRepository } from "../repositories/user.repository"
+import { sessionRepository } from "../repositories/session.repository"
 import { UserPayload } from "../types/user.type"
 import { comparePassword, hashPassword } from "../utils"
 import { AppError } from "../utils/AppError"
@@ -11,6 +12,34 @@ import { generateVerificationEmailHtml } from "../templates/verifyEmail.template
 
 const SECRET_KEY = process.env.JWT_SECRET
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+const generateAccessToken = (payload: { id: number; email: string; role: string }) => {
+  return jwt.sign(payload, SECRET_KEY!, { expiresIn: "15m" })
+}
+
+const generateRefreshToken = () => {
+  const rawToken = crypto.randomBytes(32).toString("hex")
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex")
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days sliding expiration
+  return { rawToken, tokenHash, expiresAt }
+}
+
+const issueTokenPair = async (
+  user: { id: number; email: string; role: string },
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
+  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role })
+  const { rawToken, tokenHash, expiresAt } = generateRefreshToken()
+  await sessionRepository.createRefreshToken({
+    userId: user.id,
+    tokenHash,
+    deviceInfo,
+    ipAddress,
+    expiresAt,
+  })
+  return { accessToken, refreshToken: rawToken }
+}
 
 const createUser = async (user: UserPayload) => {
   const existUser = await userRepository.findUserByEmail(user.email)
@@ -50,10 +79,14 @@ const createUser = async (user: UserPayload) => {
   return newUser
 }
 
-const loginUser = async (user: UserPayload) => {
+const loginUser = async (
+  user: UserPayload,
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
   const existUser = await userRepository.findUserByEmail(user.email)
 
-  if (!existUser) {
+  if (!existUser || !existUser.password_hash) {
     throw new AppError("Email hoặc mật khẩu không chính xác.", 401)
   }
 
@@ -71,11 +104,7 @@ const loginUser = async (user: UserPayload) => {
     )
   }
 
-  const token = jwt.sign(
-    { id: existUser.id, email: existUser.email, role: existUser.role },
-    SECRET_KEY!,
-    { expiresIn: "1d" }
-  )
+  const { accessToken, refreshToken } = await issueTokenPair(existUser, deviceInfo, ipAddress)
 
   return {
     user: {
@@ -83,11 +112,17 @@ const loginUser = async (user: UserPayload) => {
       email: existUser.email,
       role: existUser.role,
     },
-    token,
+    token: accessToken,
+    accessToken,
+    refreshToken,
   }
 }
 
-const verifyEmail = async (token: string) => {
+const verifyEmail = async (
+  token: string,
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
   if (!token || typeof token !== "string") {
     throw new AppError("Mã kích hoạt không hợp lệ.", 400)
   }
@@ -115,12 +150,7 @@ const verifyEmail = async (token: string) => {
 
   const verifiedUser = await userRepository.verifyUserEmail(existUser.id)
 
-  // Automatically generate JWT session token upon successful email verification
-  const sessionToken = jwt.sign(
-    { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role },
-    SECRET_KEY!,
-    { expiresIn: "1d" }
-  )
+  const { accessToken, refreshToken } = await issueTokenPair(verifiedUser, deviceInfo, ipAddress)
 
   return {
     user: {
@@ -128,7 +158,9 @@ const verifyEmail = async (token: string) => {
       email: verifiedUser.email,
       role: verifiedUser.role,
     },
-    token: sessionToken,
+    token: accessToken,
+    accessToken,
+    refreshToken,
   }
 }
 
@@ -235,9 +267,16 @@ const resetPassword = async (email: string, otp: string, password: string) => {
   // 4. OTP is valid -> Reset password and clear OTP/attempts
   const hashedPassword = await hashPassword(password)
   await userRepository.updatePassword(email, hashedPassword)
+
+  // Invalidate all existing sessions across all devices for security
+  await sessionRepository.revokeAllUserTokens(existUser.id)
 }
 
-const googleLogin = async (idToken: string) => {
+const googleLogin = async (
+  idToken: string,
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
   if (!idToken || typeof idToken !== "string") {
     throw new AppError("Google ID Token không hợp lệ.", 400)
   }
@@ -286,12 +325,7 @@ const googleLogin = async (idToken: string) => {
     throw new AppError("Không thể hoàn tất đăng nhập bằng Google.", 500)
   }
 
-  // 5. Generate application JWT session token
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    SECRET_KEY!,
-    { expiresIn: "7d" }
-  )
+  const { accessToken, refreshToken } = await issueTokenPair(user, deviceInfo, ipAddress)
 
   return {
     user: {
@@ -301,11 +335,86 @@ const googleLogin = async (idToken: string) => {
       avatar_url: user.avatar_url,
       auth_provider: user.auth_provider,
     },
-    token,
+    token: accessToken,
+    accessToken,
+    refreshToken,
   }
 }
 
-const facebookLogin = async (accessToken: string) => {
+const refreshSession = async (
+  rawRefreshToken: string,
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
+  if (!rawRefreshToken || typeof rawRefreshToken !== "string") {
+    throw new AppError("Refresh token is required", 400)
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(rawRefreshToken.trim()).digest("hex")
+  const tokenDoc = await sessionRepository.findByTokenHash(tokenHash)
+
+  if (!tokenDoc) {
+    throw new AppError("Phiên làm việc không hợp lệ hoặc đã hết hạn.", 401)
+  }
+
+  // Automatic Reuse Detection / Breach Defense:
+  // If an already-revoked refresh token is reused, revoke ALL sessions for that user
+  if (tokenDoc.is_revoked) {
+    await sessionRepository.revokeAllUserTokens(tokenDoc.user_id)
+    throw new AppError(
+      "Phát hiện hành vi bất thường. Toàn bộ phiên đăng nhập đã bị vô hiệu hóa vì lý do bảo mật.",
+      401
+    )
+  }
+
+  // Check expiration (inactivity > 7 days)
+  const now = new Date()
+  if (new Date(tokenDoc.expires_at) < now) {
+    await sessionRepository.revokeToken(tokenDoc.id)
+    throw new AppError("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.", 401)
+  }
+
+  // Single-Use Token Rotation: Revoke current token
+  await sessionRepository.revokeToken(tokenDoc.id)
+
+  const user = await userRepository.findUserById(tokenDoc.user_id)
+  if (!user) {
+    throw new AppError("Tài khoản người dùng không còn tồn tại.", 401)
+  }
+
+  // Issue new pair (Sliding window: 7-day expiration from now)
+  const { accessToken, refreshToken } = await issueTokenPair(user, deviceInfo, ipAddress)
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      avatar_url: user.avatar_url,
+      auth_provider: user.auth_provider,
+    },
+    token: accessToken,
+    accessToken,
+    refreshToken,
+  }
+}
+
+const logoutUser = async (rawRefreshToken?: string) => {
+  if (!rawRefreshToken || typeof rawRefreshToken !== "string") {
+    return
+  }
+  const tokenHash = crypto.createHash("sha256").update(rawRefreshToken.trim()).digest("hex")
+  const tokenDoc = await sessionRepository.findByTokenHash(tokenHash)
+  if (tokenDoc && !tokenDoc.is_revoked) {
+    await sessionRepository.revokeToken(tokenDoc.id)
+  }
+}
+
+const facebookLogin = async (
+  accessToken: string,
+  deviceInfo?: string | null,
+  ipAddress?: string | null
+) => {
   if (!accessToken || typeof accessToken !== "string") {
     throw new AppError("Facebook Access Token không hợp lệ.", 400)
   }
@@ -373,11 +482,10 @@ const facebookLogin = async (accessToken: string) => {
     throw new AppError("Không thể hoàn tất đăng nhập bằng Facebook.", 500)
   }
 
-  // 5. Generate application JWT session token
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    SECRET_KEY!,
-    { expiresIn: "7d" }
+  const { accessToken: sessionAccessToken, refreshToken } = await issueTokenPair(
+    user,
+    deviceInfo,
+    ipAddress
   )
 
   return {
@@ -388,7 +496,9 @@ const facebookLogin = async (accessToken: string) => {
       avatar_url: user.avatar_url,
       auth_provider: user.auth_provider,
     },
-    token,
+    token: sessionAccessToken,
+    accessToken: sessionAccessToken,
+    refreshToken,
   }
 }
 
@@ -401,4 +511,7 @@ export const userService = {
   resetPassword,
   googleLogin,
   facebookLogin,
+  refreshSession,
+  logoutUser,
 }
+

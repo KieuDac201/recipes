@@ -102,6 +102,18 @@ export const ResetPasswordSchema = registry.register(
 export const resetPasswordSchema = ResetPasswordSchema
 export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>
 
+export const RefreshTokenSchema = registry.register(
+  "RefreshToken",
+  z.object({
+    refreshToken: z.string().optional().openapi({
+      example: "7f4c58a1b32d90e2...",
+      description: "Optional refresh token in body if not provided via httpOnly cookie",
+    }),
+  })
+)
+export const refreshTokenSchema = RefreshTokenSchema
+export type RefreshTokenSchemaType = z.infer<typeof RefreshTokenSchema>
+
 // =============================================================================
 // 2. Response Schemas
 // =============================================================================
@@ -113,17 +125,32 @@ export const CreateUserResponseSchema = registry.register(
   })
 )
 
+export const AuthTokenPairSchema = registry.register(
+  "AuthTokenPair",
+  z.object({
+    user: UserProfileSchema,
+    accessToken: z.string().openapi({
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      description: "Short-lived JWT access token valid for 15 minutes",
+    }),
+    token: z.string().openapi({
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      description: "Backwards-compatible alias for accessToken",
+    }),
+    refreshToken: z.string().optional().openapi({
+      example: "7f4c58a1b32d90e2...",
+      description: "7-day sliding refresh token (also set in httpOnly cookie)",
+    }),
+  })
+)
+
 export const VerifyEmailResponseSchema = registry.register(
   "VerifyEmailResponse",
   z.object({
     message: z.string().openapi({ example: "Email verified successfully" }),
-    user: z.object({
-      user: UserProfileSchema,
-      token: z.string().openapi({
-        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        description: "JWT access token valid for 1 day",
-      }),
-    }),
+    user: AuthTokenPairSchema,
+    accessToken: z.string().optional(),
+    token: z.string().optional(),
   })
 )
 
@@ -138,16 +165,22 @@ export const LoginUserResponseSchema = registry.register(
   "LoginUserResponse",
   z.object({
     message: z.string().openapi({ example: "User logged in successfully" }),
-    user: z.object({
-      user: z.object({
-        email: z.string().email().openapi({ example: "user@example.com" }),
-        role: z.string().openapi({ example: "user" }),
-      }),
-      token: z.string().openapi({
-        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        description: "JWT access token valid for 1 day",
-      }),
-    }),
+    user: AuthTokenPairSchema,
+  })
+)
+
+export const RefreshTokenResponseSchema = registry.register(
+  "RefreshTokenResponse",
+  z.object({
+    message: z.string().openapi({ example: "Làm mới phiên đăng nhập thành công!" }),
+    user: AuthTokenPairSchema,
+  })
+)
+
+export const LogoutResponseSchema = registry.register(
+  "LogoutResponse",
+  z.object({
+    message: z.string().openapi({ example: "Đăng xuất thành công!" }),
   })
 )
 
@@ -336,19 +369,7 @@ export const FacebookLoginResponseSchema = registry.register(
   "FacebookLoginResponse",
   z.object({
     message: z.string().openapi({ example: "User logged in with Facebook successfully" }),
-    user: z.object({
-      user: z.object({
-        id: z.number().int().openapi({ example: 1 }),
-        email: z.string().email().openapi({ example: "user@facebook.recipes.local" }),
-        role: z.string().openapi({ example: "user" }),
-        avatar_url: z.string().nullable().optional().openapi({ example: "https://platform-lookaside.fbsbx.com/..." }),
-        auth_provider: z.string().optional().openapi({ example: "facebook" }),
-      }),
-      token: z.string().openapi({
-        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        description: "JWT session token",
-      }),
-    }),
+    user: AuthTokenPairSchema,
   })
 )
 
@@ -358,7 +379,7 @@ registry.registerPath({
   tags: ["Users & Authentication"],
   summary: "Facebook OAuth2 Login / Sign Up",
   description:
-    "Verifies Facebook Access Token via Graph API, generates synthetic email if missing, links account if email exists, creates user if not exists, and issues JWT session token.",
+    "Verifies Facebook Access Token via Graph API, generates synthetic email if missing, links account if email exists, creates user if not exists, and issues JWT access token + refresh token.",
   request: { body: { content: jsonContent(FacebookLoginSchema) } },
   responses: {
     200: jsonResponse(FacebookLoginResponseSchema, "User logged in with Facebook successfully"),
@@ -367,3 +388,36 @@ registry.registerPath({
     500: errResponse("Internal server error"),
   },
 })
+
+// 9. Refresh Token Rotation (POST /users/refresh)
+registry.registerPath({
+  method: "post",
+  path: "/users/refresh",
+  tags: ["Users & Authentication"],
+  summary: "Refresh access token via refresh token rotation",
+  description:
+    "Verifies the refresh token (from httpOnly cookie or request body), revokes the old token, and issues a new access token (15m) + new refresh token (7d sliding window). Enforces automatic breach detection.",
+  request: { body: { content: jsonContent(RefreshTokenSchema) } },
+  responses: {
+    200: jsonResponse(RefreshTokenResponseSchema, "Session refreshed successfully"),
+    400: errResponse("Missing refresh token"),
+    401: errResponse("Token expired, invalid, or breach detected"),
+    500: errResponse("Internal server error"),
+  },
+})
+
+// 10. Logout (POST /users/logout)
+registry.registerPath({
+  method: "post",
+  path: "/users/logout",
+  tags: ["Users & Authentication"],
+  summary: "Logout user and revoke refresh token session",
+  description:
+    "Revokes the session refresh token in database and clears httpOnly authentication cookies.",
+  request: { body: { content: jsonContent(RefreshTokenSchema) } },
+  responses: {
+    200: jsonResponse(LogoutResponseSchema, "User logged out successfully"),
+    500: errResponse("Internal server error"),
+  },
+})
+

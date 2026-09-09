@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express"
 import { userService } from "../services/user.service"
+import { getClientIp } from "../utils/logger"
 
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -13,18 +14,31 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
-const COOKIE_OPTIONS = {
+const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days sliding window
+}
+
+const ACCESS_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+  path: "/",
+  maxAge: 15 * 60 * 1000, // 15 minutes
 }
 
 const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = (req.body.token || req.query.token) as string
-    const result = await userService.verifyEmail(token)
-    res.cookie("token", result.token, COOKIE_OPTIONS)
+    const deviceInfo = (req.headers["user-agent"] as string) || null
+    const ipAddress = getClientIp(req) || null
+
+    const result = await userService.verifyEmail(token, deviceInfo, ipAddress)
+    res.cookie("refreshToken", result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    res.cookie("token", result.accessToken, ACCESS_COOKIE_OPTIONS)
     res.status(200).json({ message: "Kích hoạt tài khoản thành công!", ...result })
   } catch (error) {
     next(error)
@@ -34,7 +48,9 @@ const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
 const resendVerification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await userService.resendVerificationEmail(req.body.email)
-    res.status(200).json({ message: "Đã gửi lại email kích hoạt thành công. Vui lòng kiểm tra hộp thư." })
+    res.status(200).json({
+      message: "Đã gửi lại email kích hoạt thành công. Vui lòng kiểm tra hộp thư.",
+    })
   } catch (error) {
     next(error)
   }
@@ -42,9 +58,13 @@ const resendVerification = async (req: Request, res: Response, next: NextFunctio
 
 const loginUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await userService.loginUser(req.body)
-    res.cookie("token", user.token, COOKIE_OPTIONS)
-    res.status(200).json({ message: "User logged in successfully", user })
+    const deviceInfo = (req.headers["user-agent"] as string) || null
+    const ipAddress = getClientIp(req) || null
+
+    const result = await userService.loginUser(req.body, deviceInfo, ipAddress)
+    res.cookie("refreshToken", result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    res.cookie("token", result.accessToken, ACCESS_COOKIE_OPTIONS)
+    res.status(200).json({ message: "User logged in successfully", user: result })
   } catch (error) {
     next(error)
   }
@@ -72,8 +92,12 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
 const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { idToken } = req.body
-    const result = await userService.googleLogin(idToken)
-    res.cookie("token", result.token, COOKIE_OPTIONS)
+    const deviceInfo = (req.headers["user-agent"] as string) || null
+    const ipAddress = getClientIp(req) || null
+
+    const result = await userService.googleLogin(idToken, deviceInfo, ipAddress)
+    res.cookie("refreshToken", result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    res.cookie("token", result.accessToken, ACCESS_COOKIE_OPTIONS)
     res.status(200).json({
       message: "Đăng nhập bằng Google thành công!",
       user: result,
@@ -86,12 +110,57 @@ const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
 const facebookLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { accessToken } = req.body
-    const result = await userService.facebookLogin(accessToken)
-    res.cookie("token", result.token, COOKIE_OPTIONS)
+    const deviceInfo = (req.headers["user-agent"] as string) || null
+    const ipAddress = getClientIp(req) || null
+
+    const result = await userService.facebookLogin(accessToken, deviceInfo, ipAddress)
+    res.cookie("refreshToken", result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    res.cookie("token", result.accessToken, ACCESS_COOKIE_OPTIONS)
     res.status(200).json({
       message: "Đăng nhập bằng Facebook thành công!",
       user: result,
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rawToken =
+      req.cookies?.refreshToken ||
+      req.body?.refreshToken ||
+      (req.headers["x-refresh-token"] as string)
+
+    const deviceInfo = (req.headers["user-agent"] as string) || null
+    const ipAddress = getClientIp(req) || null
+
+    const result = await userService.refreshSession(rawToken, deviceInfo, ipAddress)
+    res.cookie("refreshToken", result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    res.cookie("token", result.accessToken, ACCESS_COOKIE_OPTIONS)
+    res.status(200).json({
+      message: "Làm mới phiên đăng nhập thành công!",
+      user: result,
+    })
+  } catch (error) {
+    // Clear cookies if refresh fails
+    res.clearCookie("refreshToken", { path: "/" })
+    res.clearCookie("token", { path: "/" })
+    next(error)
+  }
+}
+
+const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rawToken =
+      req.cookies?.refreshToken ||
+      req.body?.refreshToken ||
+      (req.headers["x-refresh-token"] as string)
+
+    await userService.logoutUser(rawToken)
+    res.clearCookie("refreshToken", { path: "/" })
+    res.clearCookie("token", { path: "/" })
+    res.status(200).json({ message: "Đăng xuất thành công!" })
   } catch (error) {
     next(error)
   }
@@ -106,4 +175,8 @@ export const userController = {
   resetPassword,
   googleLogin,
   facebookLogin,
+  refreshToken,
+  logoutUser,
 }
+
+

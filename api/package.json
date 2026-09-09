@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsup src/server.ts --format esm --out-dir dist --clean",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && tsup src/server.ts --format esm --out-dir dist --clean",
     "start": "node dist/server.js",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json}\""
@@ -19,6 +20,7 @@
     "@upstash/redis": "^1.38.2",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",

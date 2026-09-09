@@ -1,4 +1,5 @@
 import express from "express"
+import cookieParser from "cookie-parser"
 import swaggerUi from "swagger-ui-express"
 import router from "./routes"
 import { errorHandler } from "./middlewares/errorHandler"
@@ -45,6 +46,7 @@ app.use((req, res, next) => {
 app.use(apiLimiter)
 
 app.use(express.json())
+app.use(cookieParser())
 
 // CORS middleware
 

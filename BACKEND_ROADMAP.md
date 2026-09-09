@@ -99,7 +99,7 @@ api/
 
 ## 🔐 Phase 2: Advanced Authentication & Security
 
-### 2.1 Refresh Token Rotation & Session Management
+### 2.1 Refresh Token Rotation & Session Management ✅ *(Completed)*
 - **Problem**: Long-lived access tokens cannot be revoked if stolen. Short-lived access tokens without refresh tokens force users to re-login repeatedly.
 - **Files to Modify/Create**:
   - `src/types/auth.type.ts`
@@ -305,9 +305,9 @@ Use this checklist to track your learning and implementation progress:
 - [ ] Implement PostgreSQL Full-Text Search (`tsvector` + GIN Index)
 
 ### Phase 2: Advanced Auth & Security
-- [ ] Implement Refresh Token Rotation + httpOnly cookie session management
-- [ ] Implement Token Reuse Detection (automatic session purge on breach)
-- [ ] Add Google OAuth 2.0 social login flow
+- [x] Implement Refresh Token Rotation + httpOnly cookie session management
+- [x] Implement Token Reuse Detection (automatic session purge on breach)
+- [x] Add Google OAuth 2.0 social login flow *(Already Done)*
 - [ ] Configure `helmet` and strict CORS / payload size controls
 
 ### Phase 3: Caching & Distributed Queues
